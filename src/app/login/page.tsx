@@ -23,6 +23,11 @@ export default async function LoginPage() {
             <AuthForm mode="login" />
           </div>
           <p className="mt-4 text-sm text-on-surface-variant">
+            <Link href="/forgot-password" className="font-semibold text-primary">
+              Forgot password?
+            </Link>
+          </p>
+          <p className="mt-2 text-sm text-on-surface-variant">
             New here?{" "}
             <Link href="/signup" className="font-semibold text-primary">
               Create an account
