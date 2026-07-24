@@ -13,7 +13,7 @@ const ALLOWED_SITE_FILES = new Set([
 ]);
 
 export function getSiteAssetsRoot() {
-  return path.join(/* turbopackIgnore: true */ process.cwd(), "public", "rajuimageandqr");
+  return path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "rajuimageandqr");
 }
 
 export async function readSiteAsset(fileName: string) {

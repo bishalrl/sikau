@@ -15,16 +15,15 @@ export type UploadFolder = (typeof UPLOAD_FOLDERS)[number];
 /** Absolute directory where runtime uploads are stored. */
 export function getUploadsRoot() {
   if (process.env.UPLOAD_DIR) {
-    return path.resolve(process.env.UPLOAD_DIR);
+    return path.resolve(/*turbopackIgnore: true*/ process.env.UPLOAD_DIR);
   }
 
   // Persist outside /public so Next production static rules don't hide new files.
-  // turbopackIgnore keeps process.cwd() out of Turbopack's tracing warning.
-  return path.join(/* turbopackIgnore: true */ process.cwd(), "data", "uploads");
+  return path.join(/*turbopackIgnore: true*/ process.cwd(), "data", "uploads");
 }
 
 function getLegacyUploadsRoot() {
-  return path.join(/* turbopackIgnore: true */ process.cwd(), "public", "uploads");
+  return path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "uploads");
 }
 
 export function resolveUploadAbsolutePath(folder: string, fileName: string) {

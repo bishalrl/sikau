@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "fetch-stitch": "node scripts/fetch-stitch-screens.mjs",
@@ -12,7 +12,7 @@
     "prisma:push": "prisma db push",
     "prisma:seed": "node scripts/seed.mjs",
     "copy-pdf-assets": "node scripts/copy-pdf-assets.mjs",
-    "postinstall": "node scripts/copy-pdf-assets.mjs"
+    "postinstall": "prisma generate && node scripts/copy-pdf-assets.mjs"
   },
   "dependencies": {
     "@google/stitch-sdk": "^0.3.5",
