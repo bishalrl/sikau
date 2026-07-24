@@ -3,6 +3,7 @@ import {
   ArrowUpRight,
   BookOpen,
   FileText,
+  Mail,
   Radio,
   ScrollText,
   Users,
@@ -28,6 +29,13 @@ export default async function AdminPage() {
     { label: "Blog Posts", value: overview.blogs, icon: FileText, href: "/admin/blogs", accent: "admin-stat--violet" },
     { label: "Ebooks", value: overview.ebooks, icon: BookOpen, href: "/admin/ebooks", accent: "admin-stat--amber" },
     {
+      label: "Newsletter",
+      value: overview.newsletter,
+      icon: Mail,
+      href: "/admin/newsletter",
+      accent: "admin-stat--blue",
+    },
+    {
       label: "Pending Payments",
       value: overview.pendingPayments,
       icon: Wallet,
@@ -47,6 +55,7 @@ export default async function AdminPage() {
     { label: "Build a course", href: "/admin/courses", icon: BookOpen },
     { label: "Schedule live session", href: "/admin/live", icon: Radio },
     { label: "Review payments", href: "/admin/payments", icon: Wallet },
+    { label: "Newsletter requests", href: "/admin/newsletter", icon: Mail },
     { label: "Edit website content", href: "/admin/content", icon: ScrollText },
   ];
 

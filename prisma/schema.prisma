@@ -302,3 +302,13 @@ model LiveSignal {
   @@index([sessionId, toUserId, consumed, createdAt])
   @@index([sessionId, type, createdAt])
 }
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String   @default("footer")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+}

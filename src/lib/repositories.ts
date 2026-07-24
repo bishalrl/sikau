@@ -310,7 +310,7 @@ export async function getDashboardData(user?: SessionUser | null) {
 
 export async function getAdminOverview() {
   return safeQuery(async () => {
-    const [users, courses, payments, content, blogs, ebooks, ebookOrders] = await Promise.all([
+    const [users, courses, payments, content, blogs, ebooks, ebookOrders, newsletter] = await Promise.all([
       prisma.user.count(),
       prisma.course.count(),
       prisma.payment.count({ where: { status: PaymentStatus.PENDING } }),
@@ -318,6 +318,7 @@ export async function getAdminOverview() {
       prisma.blogPost.count(),
       prisma.ebook.count(),
       prisma.ebookOrder.count({ where: { paymentStatus: PaymentStatus.PENDING } }),
+      prisma.newsletterSubscriber.count(),
     ]);
 
     return {
@@ -327,6 +328,7 @@ export async function getAdminOverview() {
       contentEntries: content,
       blogs,
       ebooks,
+      newsletter,
     };
   }, {
     users: 0,
@@ -335,7 +337,16 @@ export async function getAdminOverview() {
     contentEntries: Object.keys(defaultWebsiteContent).length,
     blogs: 0,
     ebooks: 0,
+    newsletter: 0,
   });
+}
+
+export async function getNewsletterSubscribers() {
+  return safeQuery(async () => {
+    return prisma.newsletterSubscriber.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+  }, []);
 }
 
 export async function getManageableCourses(user?: SessionUser | null) {

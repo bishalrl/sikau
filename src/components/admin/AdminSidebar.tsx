@@ -6,6 +6,7 @@ import {
   BookOpen,
   FileText,
   LayoutDashboard,
+  Mail,
   Radio,
   ScrollText,
   Wallet,
@@ -28,6 +29,7 @@ const links: NavLink[] = [
   { href: "/admin/ebooks", label: "Ebooks", icon: BookOpen, description: "Digital products" },
   { href: "/admin/live", label: "Live sessions", icon: Radio, description: "Schedule & host" },
   { href: "/admin/payments", label: "Payments", icon: Wallet, description: "Review receipts" },
+  { href: "/admin/newsletter", label: "Newsletter", icon: Mail, description: "Subscriber emails" },
 ];
 
 function isActive(pathname: string, href: string) {
