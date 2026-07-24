@@ -4,11 +4,10 @@ import { getToken } from "next-auth/jwt";
 
 // Marketing / learner screens that an ADMIN should never land on.
 // Admins are kept inside the admin panel and redirected to /admin.
+// Ebook sales page is public for learners; admins managing ebooks use /admin/ebooks.
 const ADMIN_BLOCKED_PREFIXES = [
   "/dashboard",
   "/learn",
-  "/blog",
-  "/ebooks",
   "/quiz",
   "/study",
   "/payment",

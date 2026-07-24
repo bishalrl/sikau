@@ -2,16 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { getCurrentSession } from "@/lib/session";
+import { SITE_ASSETS } from "@/lib/site-assets";
 import { MaterialIcon } from "./MaterialIcon";
 
-const PROFILE_IMAGE =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDCRgofTwfYPqlDF_ZPoDfAzDLwPvo-J_8ztB6Ql3aJF9HubWqrYxvXBH29KVrSONQJZQizgNpMeizkRaJXie-RRLubOuTiy7F0U7gVoShetGFX3s51QdAPct6OhW0GNA-GfIHYIi6yro3djWpAemwdZM0nGUH9HPyQCUjZklQzZYmIrfVzU2pgN706p6G5gTj1J6K4smHG3-vddEh51NNJe_JgRfBuReW7JXrX5h7PIZ-mx5URQnIF1lLPBhOOFkJiKGPyV4vlIk0";
+const PROFILE_IMAGE = SITE_ASSETS.logo;
 
 const navLinks = [
-  { href: "/learn", label: "Learn", active: true },
+  { href: "/ebooks", label: "Ebook", active: true },
   { href: "/blog", label: "Blog" },
-  { href: "/ebooks", label: "Ebooks" },
-  { href: "#community", label: "Community" },
 ];
 
 export async function LandingHeader() {
@@ -22,7 +20,7 @@ export async function LandingHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/20 bg-surface/80 shadow-sm backdrop-blur-xl">
       <nav className="site-container flex items-center justify-between gap-6 py-4 md:py-5">
-        <Link href="/" className="shrink-0 font-headline-lg text-headline-lg font-bold tracking-tight text-primary">
+        <Link href="/ebooks" className="shrink-0 font-headline-lg text-headline-lg font-bold tracking-tight text-primary">
           Sikau Paisa
         </Link>
 

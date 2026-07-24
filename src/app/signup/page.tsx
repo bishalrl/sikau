@@ -7,7 +7,7 @@ import { getCurrentSession } from "@/lib/session";
 export default async function SignupPage() {
   const session = await getCurrentSession();
   if (session?.user) {
-    redirect("/dashboard");
+    redirect(session.user.role === "ADMIN" ? "/admin" : "/ebooks");
   }
 
   return (
@@ -17,7 +17,7 @@ export default async function SignupPage() {
           <p className="text-sm font-semibold uppercase tracking-wide text-primary">Join Sikau Paisa</p>
           <h1 className="mt-3 font-display-md text-display-md text-on-background">Create your account</h1>
           <p className="mt-2 text-sm text-on-surface-variant">
-            Register as a learner or instructor and manage your fintech education journey.
+            Create an account to purchase and read the NEPSE trading ebook.
           </p>
           <div className="mt-6">
             <AuthForm mode="signup" />

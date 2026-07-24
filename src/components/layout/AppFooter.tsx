@@ -8,17 +8,17 @@ type Props = {
 };
 
 const quickLinks = [
-  { label: "Masterclass", href: "/learn#masterclass" },
+  { label: "NEPSE Ebook", href: "/ebooks" },
   { label: "Blog", href: "/blog" },
-  { label: "Ebooks", href: "/ebooks" },
-  { label: "Community", href: "/#community" },
+  { label: "Pricing", href: "/ebooks#pricing" },
+  { label: "Compare packages", href: "/ebooks#compare" },
 ];
 
 const resourceLinks = [
-  { label: "All Courses", href: "/learn" },
-  { label: "Daily Quiz", href: "/quiz" },
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Help Center", href: "#" },
+  { label: "Start reading", href: "/ebooks" },
+  { label: "Blog", href: "/blog" },
+  { label: "Login", href: "/login" },
+  { label: "Sign up", href: "/signup" },
 ];
 
 const legalLinks = [
@@ -46,7 +46,7 @@ export function AppFooter({ variant = "dark", description }: Props) {
         <div className="app-footer__grid">
           {/* Brand */}
           <section className="app-footer__brand" aria-labelledby="footer-brand-title">
-            <Link href="/" className="app-footer__logo" id="footer-brand-title">
+            <Link href="/ebooks" className="app-footer__logo" id="footer-brand-title">
               Sikau Paisa
             </Link>
             <p className="app-footer__description">

@@ -1,11 +1,9 @@
 import { MaterialIcon } from "./MaterialIcon";
 
 const links = [
-  { href: "#", icon: "home", label: "Home", active: true },
-  { href: "/learn", icon: "school", label: "Learn" },
-  { href: "#community", icon: "groups", label: "Comm" },
-  { href: "#goals", icon: "track_changes", label: "Goals" },
-  { href: "#", icon: "person", label: "Profile" },
+  { href: "/ebooks", icon: "menu_book", label: "Ebook", active: true },
+  { href: "/blog", icon: "article", label: "Blog" },
+  { href: "/login", icon: "person", label: "Login" },
 ];
 
 export function MobileBottomNav() {

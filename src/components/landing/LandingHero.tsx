@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SITE_ASSETS } from "@/lib/site-assets";
 import { MaterialIcon } from "./MaterialIcon";
 
-const HERO_IMAGE =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuD6KlBGyWYQYii6V6bngtQIhF0QCJvU4Tlw6QokKZsBQlU9cWQO5TJ07eT6_iQ-ullIjpkOde6YA6_1o0IlAA4AAaOJKOUqNz3URxjyfFdddTd1KC3Ms64225i8cAQQxkb-WJnrFaEPErM48Ki-o13RVTR9Cinu_XurXn9cYXf7uWoePvMvTnRxm3NVtMcmc5yi9aP2vdK_TNRXxeK8ghqXhWDwwY-Nh37ELCgeRGcsKJB7vF7SMzUcXqjKB50X_A2extPTrLTkcH0";
+const HERO_IMAGE = SITE_ASSETS.cover;
 
 const benefits = [
   "Learn SIP investing step-by-step",

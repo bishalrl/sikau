@@ -3,9 +3,9 @@ import Link from "next/link";
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
 import { EnrollButton } from "@/components/learn/EnrollButton";
 import { Button } from "@/components/ui/Button";
+import { SITE_ASSETS } from "@/lib/site-assets";
 
-const MASTERCLASS_IMAGE =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuATePs9KotQUrOXZpGWBj3o8obkBjdMtukIwIeBse4-6SLzohVM5qeL9XOqfYBihxglGELjod506tRU0VWb804q5dFrsZEDdqhbigtdCGKF3jNv1AIGH2s3zceH2KJcbW-rFPwG9qm6zkeMG4rxpxm-ihuKkgMMqaHVZ8923PrnYuSwqQfmt72EENvlwdSQJC4UbeHDKM8JApB9R6xkaaE3elLi16y2Fp2KNcFUePES2SjGVQ9xPoY7_AKrGLvVuHqMZQ2XK2Pe5Hw";
+const MASTERCLASS_IMAGE = SITE_ASSETS.cover;
 
 const features = [
   "4+ Hours of On-Demand HD Video",

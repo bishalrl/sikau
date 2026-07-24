@@ -7,7 +7,7 @@ import { getCurrentSession } from "@/lib/session";
 export default async function LoginPage() {
   const session = await getCurrentSession();
   if (session?.user) {
-    redirect("/dashboard");
+    redirect(session.user.role === "ADMIN" ? "/admin" : "/ebooks");
   }
 
   return (
@@ -17,7 +17,7 @@ export default async function LoginPage() {
           <p className="text-sm font-semibold uppercase tracking-wide text-primary">Account Access</p>
           <h1 className="mt-3 font-display-md text-display-md text-on-background">Login</h1>
           <p className="mt-2 text-sm text-on-surface-variant">
-            Access your learner dashboard, study pages, and admin tools.
+            Sign in to unlock and read the NEPSE trading ebook.
           </p>
           <div className="mt-6">
             <AuthForm mode="login" />

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { EbookBuyButton } from "@/components/ebooks/EbookBuyButton";
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
+import { SITE_ASSETS } from "@/lib/site-assets";
 
 const EBOOK_SLUG = "nepse-trading-guide";
 const COMMUNITY_SLUG = "nepse-trading-community";
@@ -99,11 +100,11 @@ export default function EbooksLandingPage() {
 
           <div className="nepse-hero__visual">
             <Image
-              src="/images/nepse-ebook-hero.png"
-              alt="NEPSE Trading Guide ebook cover beside a laptop showing a trading chart"
-              width={1200}
-              height={675}
-              className="nepse-hero__image"
+              src={SITE_ASSETS.cover}
+              alt="NEPSE Trading Guide ebook cover"
+              width={900}
+              height={1200}
+              className="nepse-hero__cover"
               priority
             />
           </div>

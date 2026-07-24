@@ -12,7 +12,7 @@ type Props = {
 export function AuthForm({ mode }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/ebooks";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

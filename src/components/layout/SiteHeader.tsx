@@ -4,11 +4,8 @@ import { LogoutButton } from "@/components/auth/LogoutButton";
 import { getCurrentSession } from "@/lib/session";
 
 const navLinks = [
-  { href: "/learn", label: "Learn" },
+  { href: "/ebooks", label: "Ebook" },
   { href: "/blog", label: "Blog" },
-  { href: "/ebooks", label: "Ebooks" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/quiz", label: "Quiz" },
 ];
 
 export async function SiteHeader() {
@@ -19,14 +16,15 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-outline-variant/30 bg-surface/80 shadow-sm backdrop-blur-xl">
       <nav className="site-container flex items-center justify-between gap-6 py-4 md:py-5">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white">
-            SP
+        <Link href="/ebooks" className="flex shrink-0 items-center gap-2.5">
+          <div className="relative h-9 w-9 overflow-hidden rounded-xl bg-white">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/rajuimageandqr/logo.jpeg" alt="Sikau Paisa" className="h-full w-full object-cover" />
           </div>
           <div>
             <p className="font-label-md text-on-background">Sikau Paisa</p>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-              Fintech Academy
+              NEPSE Ebook
             </p>
           </div>
         </Link>

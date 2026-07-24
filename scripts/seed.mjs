@@ -268,6 +268,10 @@ Protect capital and execute trades with discipline.
 ### Phase 6 — Psychology & Next Steps
 Master emotions and create your personal trading plan.`;
 
+  const NEPSE_COVER = "/rajuimageandqr/ebook-cover.jpeg";
+  const NEPSE_PDF = "/rajuimageandqr/e-book.pdf";
+  const NEPSE_QR = "/rajuimageandqr/bankqr.jpeg";
+
   await prisma.ebook.upsert({
     where: { slug: "nepse-trading-guide" },
     update: {
@@ -275,10 +279,12 @@ Master emotions and create your personal trading plan.`;
       description:
         "From Confused to Confident: your step-by-step guide to professional trading in NEPSE. Ebook only — Rs 599.",
       content: nepseGuideContent,
-      coverImage: "/images/nepse-ebook-hero.png",
+      coverImage: NEPSE_COVER,
+      filePath: NEPSE_PDF,
+      paymentQrPath: NEPSE_QR,
       priceNpr: 599,
       isFree: false,
-      paymentInstructions: "Pay NPR 599 via QR and upload the receipt to unlock the ebook.",
+      paymentInstructions: "Pay NPR 599 via the bank QR and upload the receipt to unlock the ebook.",
       status: ContentStatus.PUBLISHED,
       publishedAt: new Date(),
     },
@@ -289,11 +295,12 @@ Master emotions and create your personal trading plan.`;
       description:
         "From Confused to Confident: your step-by-step guide to professional trading in NEPSE. Ebook only — Rs 599.",
       content: nepseGuideContent,
-      coverImage: "/images/nepse-ebook-hero.png",
-      filePath: null,
+      coverImage: NEPSE_COVER,
+      filePath: NEPSE_PDF,
+      paymentQrPath: NEPSE_QR,
       priceNpr: 599,
       isFree: false,
-      paymentInstructions: "Pay NPR 599 via QR and upload the receipt to unlock the ebook.",
+      paymentInstructions: "Pay NPR 599 via the bank QR and upload the receipt to unlock the ebook.",
       status: ContentStatus.PUBLISHED,
       publishedAt: new Date(),
       authorId: instructor.id,
@@ -318,11 +325,13 @@ You also get:
       description:
         "Ebook plus lifetime community access and entry to every monthly live session — Rs 999.",
       content: nepseCommunityContent,
-      coverImage: "/images/nepse-ebook-hero.png",
+      coverImage: NEPSE_COVER,
+      filePath: NEPSE_PDF,
+      paymentQrPath: NEPSE_QR,
       priceNpr: 999,
       isFree: false,
       paymentInstructions:
-        "Pay NPR 999 via QR and upload the receipt to unlock the ebook and community access.",
+        "Pay NPR 999 via the bank QR and upload the receipt to unlock the ebook and community access.",
       status: ContentStatus.PUBLISHED,
       publishedAt: new Date(),
     },
@@ -333,12 +342,13 @@ You also get:
       description:
         "Ebook plus lifetime community access and entry to every monthly live session — Rs 999.",
       content: nepseCommunityContent,
-      coverImage: "/images/nepse-ebook-hero.png",
-      filePath: null,
+      coverImage: NEPSE_COVER,
+      filePath: NEPSE_PDF,
+      paymentQrPath: NEPSE_QR,
       priceNpr: 999,
       isFree: false,
       paymentInstructions:
-        "Pay NPR 999 via QR and upload the receipt to unlock the ebook and community access.",
+        "Pay NPR 999 via the bank QR and upload the receipt to unlock the ebook and community access.",
       status: ContentStatus.PUBLISHED,
       publishedAt: new Date(),
       authorId: instructor.id,

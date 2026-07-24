@@ -1123,6 +1123,78 @@ body {
   }
 }
 
+.nepse-hero__media {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+}
+
+@media (min-width: 960px) {
+  .nepse-hero__media {
+    justify-items: end;
+  }
+}
+
+.nepse-hero__cover {
+  width: min(100%, 420px);
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  box-shadow: 0 24px 50px rgba(15, 31, 24, 0.18);
+  object-fit: cover;
+}
+
+.nepse-hero__raju-card {
+  position: absolute;
+  left: 8%;
+  bottom: 8%;
+  width: min(42%, 180px);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 14px 32px rgba(15, 31, 24, 0.2);
+}
+
+.nepse-hero__raju {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  aspect-ratio: 1;
+}
+
+.nepse-hero__raju-caption {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--nepse-ink);
+}
+
+.nepse-author {
+  display: grid;
+  gap: 28px;
+  align-items: center;
+}
+
+@media (min-width: 800px) {
+  .nepse-author {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 40px;
+  }
+}
+
+.nepse-author__photo {
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  border-radius: 24px;
+  object-fit: cover;
+  box-shadow: 0 18px 40px rgba(15, 31, 24, 0.12);
+}
+
 .nepse-hero__image {
   width: 100%;
   height: auto;
