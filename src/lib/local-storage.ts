@@ -17,9 +17,14 @@ export function getUploadsRoot() {
   if (process.env.UPLOAD_DIR) {
     return path.resolve(process.env.UPLOAD_DIR);
   }
-  // Keep writing under public/uploads so local paths stay familiar,
-  // but production serving goes through /uploads/[...path] (not static public).
-  return path.join(process.cwd(), "public", "uploads");
+
+  // Persist outside /public so Next production static rules don't hide new files.
+  // turbopackIgnore keeps process.cwd() out of Turbopack's tracing warning.
+  return path.join(/* turbopackIgnore: true */ process.cwd(), "data", "uploads");
+}
+
+function getLegacyUploadsRoot() {
+  return path.join(/* turbopackIgnore: true */ process.cwd(), "public", "uploads");
 }
 
 export function resolveUploadAbsolutePath(folder: string, fileName: string) {
@@ -30,13 +35,15 @@ export function resolveUploadAbsolutePath(folder: string, fileName: string) {
     return null;
   }
 
-  const root = getUploadsRoot();
-  const absolutePath = path.join(root, folder, fileName);
-  const normalizedRoot = path.normalize(root + path.sep);
-  if (!path.normalize(absolutePath).startsWith(normalizedRoot)) {
-    return null;
+  const candidates = [getUploadsRoot(), getLegacyUploadsRoot()];
+  for (const root of candidates) {
+    const absolutePath = path.join(root, folder, fileName);
+    const normalizedRoot = path.normalize(root + path.sep);
+    if (path.normalize(absolutePath).startsWith(normalizedRoot)) {
+      return absolutePath;
+    }
   }
-  return absolutePath;
+  return null;
 }
 
 export async function saveUploadedFile(file: File, folder: UploadFolder) {
@@ -53,16 +60,29 @@ export async function saveUploadedFile(file: File, folder: UploadFolder) {
 }
 
 export async function readUploadedFile(folder: string, fileName: string) {
-  const absolutePath = resolveUploadAbsolutePath(folder, fileName);
-  if (!absolutePath) return null;
-
-  try {
-    await access(absolutePath);
-    const data = await readFile(absolutePath);
-    return { absolutePath, data };
-  } catch {
+  if (!UPLOAD_FOLDERS.includes(folder as UploadFolder)) {
     return null;
   }
+  if (!fileName || fileName.includes("..") || fileName.includes("/") || fileName.includes("\\")) {
+    return null;
+  }
+
+  const roots = [getUploadsRoot(), getLegacyUploadsRoot()];
+  for (const root of roots) {
+    const absolutePath = path.join(root, folder, fileName);
+    const normalizedRoot = path.normalize(root + path.sep);
+    if (!path.normalize(absolutePath).startsWith(normalizedRoot)) {
+      continue;
+    }
+    try {
+      await access(absolutePath);
+      const data = await readFile(absolutePath);
+      return { absolutePath, data };
+    } catch {
+      // try next root
+    }
+  }
+  return null;
 }
 
 export function contentTypeForFileName(fileName: string) {

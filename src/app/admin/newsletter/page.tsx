@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/Card";
-import { getNewsletterSubscribers } from "@/lib/repositories";
+import { getNewsletterSubscribers, type NewsletterSubscriberRow } from "@/lib/repositories";
 
 export default async function AdminNewsletterPage() {
   const subscribers = await getNewsletterSubscribers();
@@ -34,7 +34,7 @@ export default async function AdminNewsletterPage() {
                 </tr>
               </thead>
               <tbody>
-                {subscribers.map((subscriber) => (
+                {subscribers.map((subscriber: NewsletterSubscriberRow) => (
                   <tr key={subscriber.id} className="border-t border-outline-variant/20">
                     <td className="px-5 py-3 font-medium text-on-background">{subscriber.email}</td>
                     <td className="px-5 py-3 text-on-surface-variant">{subscriber.source}</td>

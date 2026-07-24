@@ -341,12 +341,27 @@ export async function getAdminOverview() {
   });
 }
 
-export async function getNewsletterSubscribers() {
+export type NewsletterSubscriberRow = {
+  id: string;
+  email: string;
+  source: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export async function getNewsletterSubscribers(): Promise<NewsletterSubscriberRow[]> {
   return safeQuery(async () => {
     return prisma.newsletterSubscriber.findMany({
       orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        source: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
-  }, []);
+  }, [] as NewsletterSubscriberRow[]);
 }
 
 export async function getManageableCourses(user?: SessionUser | null) {
