@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated pdf.js assets (recreated by scripts/copy-pdf-assets.mjs on install)
+/public/pdf.worker.min.mjs
+/public/pdf-cmaps/
+/public/pdf-fonts/
+/public/pdf-wasm/
