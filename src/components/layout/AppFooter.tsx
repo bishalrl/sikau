@@ -8,10 +8,10 @@ type Props = {
 };
 
 const quickLinks = [
+  { label: "Home", href: "/" },
   { label: "NEPSE Ebook", href: "/ebooks" },
   { label: "Blog", href: "/blog" },
   { label: "Pricing", href: "/ebooks#pricing" },
-  { label: "Compare packages", href: "/ebooks#compare" },
 ];
 
 const resourceLinks = [
@@ -46,7 +46,7 @@ export function AppFooter({ variant = "dark", description }: Props) {
         <div className="app-footer__grid">
           {/* Brand */}
           <section className="app-footer__brand" aria-labelledby="footer-brand-title">
-            <Link href="/ebooks" className="app-footer__logo" id="footer-brand-title">
+            <Link href="/" className="app-footer__logo" id="footer-brand-title">
               Sikau Paisa
             </Link>
             <p className="app-footer__description">

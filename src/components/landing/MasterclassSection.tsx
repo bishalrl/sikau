@@ -56,8 +56,8 @@ export function MasterclassSection() {
                 <span className="block text-label-sm text-secondary-fixed-dim line-through">NPR 4,999</span>
                 <span className="text-display-md font-bold text-white">NPR 1,999</span>
               </div>
-              <Link href="/learn" className="emerald-gradient flex-1 rounded-xl py-md text-center font-label-md text-white transition-all hover:brightness-110">
-                Enroll Now
+              <Link href="/ebooks" className="emerald-gradient flex-1 rounded-xl py-md text-center font-label-md text-white transition-all hover:brightness-110">
+                Get the Ebook
               </Link>
             </div>
           </div>

@@ -8,7 +8,8 @@ import { MaterialIcon } from "./MaterialIcon";
 const PROFILE_IMAGE = SITE_ASSETS.logo;
 
 const navLinks = [
-  { href: "/ebooks", label: "Ebook", active: true },
+  { href: "/", label: "Home" },
+  { href: "/ebooks", label: "Ebook" },
   { href: "/blog", label: "Blog" },
 ];
 
@@ -20,32 +21,20 @@ export async function LandingHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/20 bg-surface/80 shadow-sm backdrop-blur-xl">
       <nav className="site-container flex items-center justify-between gap-6 py-4 md:py-5">
-        <Link href="/ebooks" className="shrink-0 font-headline-lg text-headline-lg font-bold tracking-tight text-primary">
+        <Link href="/" className="shrink-0 font-headline-lg text-headline-lg font-bold tracking-tight text-primary">
           Sikau Paisa
         </Link>
 
         <div className="hidden items-center gap-10 md:flex">
-          {navLinks.map((link) =>
-            link.href.startsWith("/") ? (
-              <Link
-                key={link.label}
-                href={link.href}
-                className={`text-[15px] font-semibold tracking-wide transition-colors ${
-                  link.active ? "text-primary" : "text-on-surface-variant hover:text-primary"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ) : (
-              <a
-                key={link.label}
-                href={link.href}
-                className="text-[15px] font-semibold tracking-wide text-on-surface-variant transition-colors hover:text-primary"
-              >
-                {link.label}
-              </a>
-            ),
-          )}
+          {navLinks.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className="text-[15px] font-semibold tracking-wide text-on-surface-variant transition-colors hover:text-primary"
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
 
         <div className="flex shrink-0 items-center gap-3 pr-1 md:gap-4 md:pr-2">

@@ -23,6 +23,7 @@ export function GuestBottomNav({ isLoggedIn = false }: Props) {
   }
 
   const links = [
+    { href: "/", icon: "home", label: "Home" },
     { href: "/ebooks", icon: "menu_book", label: "Ebook" },
     { href: "/blog", icon: "article", label: "Blog" },
     isLoggedIn
@@ -36,9 +37,12 @@ export function GuestBottomNav({ isLoggedIn = false }: Props) {
       aria-label="Main navigation"
     >
       {links.map((link) => {
-        const active = link.href.startsWith("/ebooks")
-          ? pathname === "/ebooks" || pathname.startsWith("/ebooks/")
-          : pathname === link.href || pathname.startsWith(`${link.href}/`);
+        const active =
+          link.href === "/"
+            ? pathname === "/"
+            : link.href.startsWith("/ebooks")
+              ? pathname === "/ebooks" || pathname.startsWith("/ebooks/")
+              : pathname === link.href || pathname.startsWith(`${link.href}/`);
 
         return (
           <Link
@@ -48,7 +52,7 @@ export function GuestBottomNav({ isLoggedIn = false }: Props) {
               active ? "text-primary" : "text-on-surface-variant"
             }`}
           >
-            <MaterialIcon name={link.icon} />
+            <MaterialIcon name={link.icon} filled={Boolean(active)} />
             <span className="text-[10px] font-semibold">{link.label}</span>
           </Link>
         );

@@ -1,7 +1,8 @@
 import { MaterialIcon } from "./MaterialIcon";
 
 const links = [
-  { href: "/ebooks", icon: "menu_book", label: "Ebook", active: true },
+  { href: "/", icon: "home", label: "Home", active: true },
+  { href: "/ebooks", icon: "menu_book", label: "Ebook" },
   { href: "/blog", icon: "article", label: "Blog" },
   { href: "/login", icon: "person", label: "Login" },
 ];
@@ -13,13 +14,11 @@ export function MobileBottomNav() {
         <a
           key={link.label}
           href={link.href}
-          className={`flex flex-col items-center justify-center ${
-            link.active
-              ? "relative text-primary after:mt-1 after:h-1 after:w-1 after:rounded-full after:bg-primary after:content-['']"
-              : "text-on-surface-variant"
+          className={`flex flex-col items-center gap-1 ${
+            link.active ? "text-primary" : "text-on-surface-variant"
           }`}
         >
-          <MaterialIcon name={link.icon} />
+          <MaterialIcon name={link.icon} filled={Boolean(link.active)} />
           <span className="font-label-sm text-[10px]">{link.label}</span>
         </a>
       ))}

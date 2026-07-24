@@ -71,8 +71,8 @@ export function LandingHero({ badge, title, benefits: contentBenefits }: Props) 
           </ul>
 
           <div className="hero-cta">
-            <Link href="/learn" className="hero-btn-primary">
-              Enroll Now
+            <Link href="/ebooks" className="hero-btn-primary">
+              Get the Ebook
             </Link>
             <button type="button" className="hero-btn-secondary">
               <MaterialIcon name="play_circle" />

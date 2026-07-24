@@ -12,10 +12,10 @@ export function FinalCtaSection() {
         </p>
         <div className="reveal active mt-lg flex flex-col justify-center gap-md delay-200 sm:flex-row">
           <Link
-            href="/learn"
+            href="/ebooks"
             className="rounded-xl bg-white px-xl py-md font-bold text-primary shadow-2xl transition-transform hover:scale-105"
           >
-            Enroll Now - NPR 1,999
+            Get the NEPSE Ebook
           </Link>
           <button
             type="button"

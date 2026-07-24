@@ -13,7 +13,7 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-[60] border-b border-outline-variant/30 bg-surface/95 shadow-sm backdrop-blur-xl">
       <nav className="site-container relative z-[61] flex items-center justify-between gap-4 py-4 md:gap-6 md:py-5">
-        <Link href="/ebooks" className="relative z-[62] flex shrink-0 cursor-pointer items-center gap-2.5">
+        <Link href="/" className="relative z-[62] flex shrink-0 cursor-pointer items-center gap-2.5">
           <div className="relative h-9 w-9 overflow-hidden rounded-xl bg-white">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={SITE_ASSETS.logo} alt="Sikau Paisa" className="h-full w-full object-cover" />
@@ -21,7 +21,7 @@ export async function SiteHeader() {
           <div>
             <p className="font-label-md text-on-background">Sikau Paisa</p>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-              NEPSE Ebook
+              Learn · Grow · Earn
             </p>
           </div>
         </Link>
@@ -65,6 +65,12 @@ export async function SiteHeader() {
               <X className="hidden h-5 w-5" />
             </summary>
             <div className="absolute right-0 z-[70] mt-2 w-56 rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-2 shadow-lg">
+              <Link
+                href="/"
+                className="block cursor-pointer rounded-lg px-3 py-2.5 text-sm font-semibold text-on-background hover:bg-primary-container/10 hover:text-primary"
+              >
+                Home
+              </Link>
               <Link
                 href="/ebooks"
                 className="block cursor-pointer rounded-lg px-3 py-2.5 text-sm font-semibold text-on-background hover:bg-primary-container/10 hover:text-primary"

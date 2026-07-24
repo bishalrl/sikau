@@ -5,7 +5,7 @@ import { getCurrentSession } from "@/lib/session";
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getCurrentSession();
   if (session?.user.role !== "ADMIN") {
-    redirect("/ebooks");
+    redirect("/");
   }
 
   const name = session.user.name ?? session.user.email ?? "Admin";

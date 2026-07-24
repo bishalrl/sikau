@@ -7,7 +7,7 @@ import { getCurrentSession } from "@/lib/session";
 export default async function LoginPage() {
   const session = await getCurrentSession();
   if (session?.user) {
-    redirect(session.user.role === "ADMIN" ? "/admin" : "/ebooks");
+    redirect(session.user.role === "ADMIN" ? "/admin" : "/");
   }
 
   return (
