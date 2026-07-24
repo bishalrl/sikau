@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { getEbookBySlug } from "@/lib/repositories";
 import { getCurrentSession } from "@/lib/session";
+import { SITE_ASSETS } from "@/lib/site-assets";
 
 export default async function EbookPayPage({
   params,
@@ -46,18 +47,15 @@ export default async function EbookPayPage({
             {ebook.paymentInstructions ?? "Scan the QR, pay, then upload your receipt for unlock."}
           </p>
           <div className="mt-6 rounded-3xl border border-dashed border-outline-variant/50 bg-surface-container-low p-8 text-center">
-            {ebook.paymentQrPath ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={ebook.paymentQrPath}
-                alt={`${ebook.title} payment QR`}
-                className="mx-auto h-72 w-72 rounded-2xl object-contain"
-              />
-            ) : (
-              <p className="text-sm text-on-surface-variant">
-                Payment QR will appear here once uploaded by admin/instructor.
-              </p>
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={ebook.paymentQrPath || SITE_ASSETS.qr}
+              alt={`${ebook.title} payment QR`}
+              className="mx-auto h-72 w-72 rounded-2xl bg-white object-contain p-3"
+            />
+            <p className="mt-4 text-sm text-on-surface-variant">
+              Scan this bank QR, pay NPR {ebook.priceNpr.toLocaleString()}, then upload your receipt.
+            </p>
           </div>
           <p className="mt-4 font-headline-md text-on-background">
             NPR {ebook.priceNpr.toLocaleString()}

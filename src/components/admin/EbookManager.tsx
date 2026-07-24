@@ -27,7 +27,7 @@ export function EbookManager({ ebooks }: { ebooks: EbookItem[] }) {
     filePath: "",
     priceNpr: "0",
     isFree: true,
-    paymentQrPath: "",
+    paymentQrPath: "/rajuimageandqr/bankqr.jpeg",
     paymentInstructions: "Scan QR and upload your receipt for ebook access.",
     status: "DRAFT",
   });
