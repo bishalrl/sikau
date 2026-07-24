@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SITE_ASSETS } from "@/lib/site-assets";
 import { MaterialIcon } from "./MaterialIcon";
 
-const MASTERCLASS_IMAGE = SITE_ASSETS.cover;
+const MASTERCLASS_IMAGE = SITE_ASSETS.raju3;
 
 const features = [
   "4+ Hours of On-Demand HD Video",

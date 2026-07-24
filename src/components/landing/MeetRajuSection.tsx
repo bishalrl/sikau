@@ -2,7 +2,7 @@ import Image from "next/image";
 import { SITE_ASSETS } from "@/lib/site-assets";
 import { MaterialIcon } from "./MaterialIcon";
 
-const RAJU_IMAGE = SITE_ASSETS.logo;
+const RAJU_IMAGE = SITE_ASSETS.raju2;
 
 const timeline = [
   {

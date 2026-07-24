@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SITE_ASSETS } from "@/lib/site-assets";
 import { MaterialIcon } from "./MaterialIcon";
 
-const HERO_IMAGE = SITE_ASSETS.cover;
+const HERO_IMAGE = SITE_ASSETS.raju1;
 
 const benefits = [
   "Learn SIP investing step-by-step",
