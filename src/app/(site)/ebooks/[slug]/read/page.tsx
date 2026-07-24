@@ -1,11 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import { EbookPdfReader } from "@/components/ebooks/EbookPdfReader";
-import { EbookReader } from "@/components/ebooks/EbookReader";
 import { getEbookBySlug } from "@/lib/repositories";
 import { getCurrentSession } from "@/lib/session";
+import { SITE_ASSETS } from "@/lib/site-assets";
 
-function isPdf(filePath?: string | null) {
-  return Boolean(filePath && filePath.toLowerCase().endsWith(".pdf"));
+function resolveEbookPdf(filePath?: string | null) {
+  if (filePath && filePath.toLowerCase().endsWith(".pdf")) {
+    // Map packaged public path to the reliable API asset route.
+    if (filePath === "/rajuimageandqr/e-book.pdf" || filePath.endsWith("/e-book.pdf")) {
+      return SITE_ASSETS.pdf;
+    }
+    return filePath;
+  }
+  return SITE_ASSETS.pdf;
 }
 
 export default async function EbookReadPage({
@@ -30,25 +37,15 @@ export default async function EbookReadPage({
     redirect(`/ebooks/${ebook.slug}/pay`);
   }
 
-  if (isPdf(ebook.filePath)) {
-    return (
-      <EbookPdfReader
-        title={ebook.title}
-        titleNe={ebook.titleNe}
-        fileHref={ebook.filePath as string}
-        backHref={`/ebooks/${ebook.slug}`}
-        allowDownload={false}
-      />
-    );
-  }
+  const pdfHref = resolveEbookPdf(ebook.filePath);
 
   return (
-    <EbookReader
+    <EbookPdfReader
       title={ebook.title}
       titleNe={ebook.titleNe}
-      content={ebook.content ?? ""}
+      fileHref={pdfHref}
       backHref={`/ebooks/${ebook.slug}`}
-      downloadHref={ebook.filePath}
+      allowDownload={false}
     />
   );
 }

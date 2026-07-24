@@ -24,7 +24,7 @@ export function EbookManager({ ebooks }: { ebooks: EbookItem[] }) {
     description: "",
     content: "",
     coverImage: "",
-    filePath: "",
+    filePath: "/rajuimageandqr/e-book.pdf",
     priceNpr: "0",
     isFree: true,
     paymentQrPath: "/rajuimageandqr/bankqr.jpeg",

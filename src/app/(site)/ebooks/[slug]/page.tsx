@@ -60,9 +60,9 @@ export default async function EbookDetailPage({
               filePath={ebook.filePath}
               size="lg"
             />
-            {approved && ebook.filePath && (
-              <Button href={ebook.filePath} variant="outline" size="lg">
-                Download PDF
+            {approved && (
+              <Button href={`/ebooks/${ebook.slug}/read`} variant="outline" size="lg">
+                Open ebook reader
               </Button>
             )}
           </div>
