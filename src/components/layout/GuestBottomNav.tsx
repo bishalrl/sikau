@@ -16,6 +16,7 @@ export function GuestBottomNav({ isLoggedIn = false }: Props) {
     pathname.startsWith("/signup") ||
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/community/") ||
     pathname.includes("/read") ||
     pathname.includes("/pay")
   ) {
@@ -25,7 +26,7 @@ export function GuestBottomNav({ isLoggedIn = false }: Props) {
   const links = [
     { href: "/", icon: "home", label: "Home" },
     { href: "/ebooks", icon: "menu_book", label: "Ebook" },
-    { href: "/blog", icon: "article", label: "Blog" },
+    { href: "/community", icon: "groups", label: "Community" },
     isLoggedIn
       ? { href: "/ebooks#packages", icon: "shopping_bag", label: "Buy" }
       : { href: "/login", icon: "person", label: "Login" },

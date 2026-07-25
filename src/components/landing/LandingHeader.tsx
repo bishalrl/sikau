@@ -10,6 +10,7 @@ const PROFILE_IMAGE = SITE_ASSETS.logo;
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/ebooks", label: "Ebook" },
+  { href: "/community", label: "Community" },
   { href: "/blog", label: "Blog" },
 ];
 

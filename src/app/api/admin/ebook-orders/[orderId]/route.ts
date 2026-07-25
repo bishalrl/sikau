@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
+import { ensureCommunityMembershipsForEbookOrder } from "@/lib/community-access";
 import { prisma } from "@/lib/prisma";
 
 const reviewSchema = z.object({
@@ -32,6 +33,10 @@ export async function PATCH(
         reviewedAt: new Date(),
       },
     });
+
+    if (input.status === "APPROVED") {
+      await ensureCommunityMembershipsForEbookOrder(order.id);
+    }
 
     return NextResponse.json({ order });
   } catch (error) {

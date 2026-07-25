@@ -9,6 +9,7 @@ import {
   Mail,
   Radio,
   ScrollText,
+  Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const links: NavLink[] = [
   { href: "/admin/courses", label: "Courses", icon: BookOpen, description: "Build & publish" },
   { href: "/admin/blogs", label: "Blog", icon: FileText, description: "Articles" },
   { href: "/admin/ebooks", label: "Ebooks", icon: BookOpen, description: "Digital products" },
+  { href: "/admin/communities", label: "Communities", icon: Users, description: "Groups & chat" },
   { href: "/admin/live", label: "Live sessions", icon: Radio, description: "Schedule & host" },
   { href: "/admin/payments", label: "Payments", icon: Wallet, description: "Review receipts" },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail, description: "Subscriber emails" },

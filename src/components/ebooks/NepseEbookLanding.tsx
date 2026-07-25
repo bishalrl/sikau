@@ -218,18 +218,24 @@ export default function EbooksLandingPage() {
                   <tr key={row.label}>
                     <td>{row.label}</td>
                     <td>
-                      {row.ebook ? (
-                        <MaterialIcon name="check_circle" className="text-primary" filled />
-                      ) : (
-                        <MaterialIcon name="close" className="text-outline" />
-                      )}
+                      <span className="nepse-compare__icon" aria-hidden="true">
+                        {row.ebook ? (
+                          <MaterialIcon name="check_circle" className="text-primary" filled />
+                        ) : (
+                          <MaterialIcon name="cancel" className="text-outline" />
+                        )}
+                      </span>
+                      <span className="sr-only">{row.ebook ? "Included" : "Not included"}</span>
                     </td>
                     <td>
-                      {row.community ? (
-                        <MaterialIcon name="check_circle" className="text-primary" filled />
-                      ) : (
-                        <MaterialIcon name="close" className="text-outline" />
-                      )}
+                      <span className="nepse-compare__icon" aria-hidden="true">
+                        {row.community ? (
+                          <MaterialIcon name="check_circle" className="text-primary" filled />
+                        ) : (
+                          <MaterialIcon name="cancel" className="text-outline" />
+                        )}
+                      </span>
+                      <span className="sr-only">{row.community ? "Included" : "Not included"}</span>
                     </td>
                   </tr>
                 ))}

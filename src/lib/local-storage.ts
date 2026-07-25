@@ -8,6 +8,7 @@ export const UPLOAD_FOLDERS = [
   "payment-qr",
   "ebooks",
   "blog-covers",
+  "community-media",
 ] as const;
 
 export type UploadFolder = (typeof UPLOAD_FOLDERS)[number];

@@ -48,6 +48,26 @@ enum LiveSessionStatus {
   CANCELLED
 }
 
+enum CommunityStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum CommunityMemberRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum CommunityMessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+  SYSTEM
+}
+
 model User {
   id                 String            @id @default(cuid())
   name               String?
@@ -68,6 +88,10 @@ model User {
   ebookOrdersReviewed EbookOrder[]     @relation("EbookOrderReviewer")
   hostedLiveSessions LiveSession[]     @relation("LiveHost")
   liveSignalsSent    LiveSignal[]      @relation("LiveSignalSender")
+  communityMemberships CommunityMember[]
+  communityMessages  CommunityMessage[] @relation("CommunityMessageAuthor")
+  communityReactions CommunityReaction[]
+  communityAnnouncements CommunityAnnouncement[] @relation("CommunityAnnouncementAuthor")
 }
 
 model WebsiteContent {
@@ -246,6 +270,7 @@ model Ebook {
   authorId            String
   author              User          @relation("EbookAuthor", fields: [authorId], references: [id], onDelete: Restrict)
   orders              EbookOrder[]
+  communityLinks      CommunityEbookLink[]
 
   @@index([status, publishedAt])
 }
@@ -311,4 +336,118 @@ model NewsletterSubscriber {
   updatedAt DateTime @updatedAt
 
   @@index([createdAt])
+}
+
+model Community {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  name        String
+  description String          @default("")
+  coverImage  String?
+  status      CommunityStatus @default(ACTIVE)
+  /// JSON permissions: { text, media, voice } each "ALL" | "MODS" | "ADMIN"
+  permissions String          @default("{\"text\":\"ALL\",\"media\":\"ALL\",\"voice\":\"MODS\"}")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  ebookLinks  CommunityEbookLink[]
+  members     CommunityMember[]
+  messages    CommunityMessage[]
+  announcements CommunityAnnouncement[]
+
+  @@index([status, updatedAt])
+}
+
+model CommunityEbookLink {
+  id          String    @id @default(cuid())
+  communityId String
+  ebookId     String
+  createdAt   DateTime  @default(now())
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  ebook       Ebook     @relation(fields: [ebookId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, ebookId])
+  @@index([ebookId])
+}
+
+model CommunityMember {
+  id          String              @id @default(cuid())
+  communityId String
+  userId      String
+  role        CommunityMemberRole @default(MEMBER)
+  mutedUntil  DateTime?
+  bannedAt    DateTime?
+  lastReadAt  DateTime?
+  joinedAt    DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  community   Community           @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+  @@index([userId])
+  @@index([communityId, joinedAt])
+}
+
+model CommunityMessage {
+  id          String               @id @default(cuid())
+  communityId String
+  authorId    String
+  type        CommunityMessageType @default(TEXT)
+  body        String               @default("")
+  replyToId   String?
+  pinnedAt    DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  community   Community            @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  author      User                 @relation("CommunityMessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  replyTo     CommunityMessage?    @relation("CommunityMessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies     CommunityMessage[]   @relation("CommunityMessageReplies")
+  attachments CommunityAttachment[]
+  reactions   CommunityReaction[]
+
+  @@index([communityId, createdAt])
+  @@index([communityId, pinnedAt])
+}
+
+model CommunityAttachment {
+  id         String           @id @default(cuid())
+  messageId  String
+  path       String
+  mime       String
+  size       Int              @default(0)
+  name       String
+  durationMs Int?
+  thumbPath  String?
+  createdAt  DateTime         @default(now())
+  message    CommunityMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model CommunityReaction {
+  id        String           @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime         @default(now())
+  message   CommunityMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+}
+
+model CommunityAnnouncement {
+  id          String    @id @default(cuid())
+  communityId String
+  title       String
+  body        String
+  pinned      Boolean   @default(true)
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  createdBy   User      @relation("CommunityAnnouncementAuthor", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([communityId, pinned, createdAt])
 }

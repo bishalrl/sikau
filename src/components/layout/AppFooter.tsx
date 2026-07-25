@@ -10,8 +10,8 @@ type Props = {
 const quickLinks = [
   { label: "Home", href: "/" },
   { label: "NEPSE Ebook", href: "/ebooks" },
+  { label: "Community", href: "/community" },
   { label: "Blog", href: "/blog" },
-  { label: "Pricing", href: "/ebooks#pricing" },
 ];
 
 const resourceLinks = [

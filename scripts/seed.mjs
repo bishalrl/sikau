@@ -355,6 +355,61 @@ You also get:
     },
   });
 
+  const communityEbook = await prisma.ebook.findUnique({
+    where: { slug: "nepse-trading-community" },
+  });
+
+  const nepseCommunity = await prisma.community.upsert({
+    where: { slug: "nepse-lifetime-community" },
+    update: {
+      name: "NEPSE Lifetime Community",
+      description:
+        "Exclusive trading community for NEPSE Guide + Lifetime Community members. Charts, Q&A, and accountability.",
+      coverImage: NEPSE_COVER,
+      status: "ACTIVE",
+    },
+    create: {
+      slug: "nepse-lifetime-community",
+      name: "NEPSE Lifetime Community",
+      description:
+        "Exclusive trading community for NEPSE Guide + Lifetime Community members. Charts, Q&A, and accountability.",
+      coverImage: NEPSE_COVER,
+      status: "ACTIVE",
+      permissions: JSON.stringify({ text: "ALL", media: "ALL", voice: "MODS" }),
+    },
+  });
+
+  if (communityEbook) {
+    await prisma.communityEbookLink.upsert({
+      where: {
+        communityId_ebookId: {
+          communityId: nepseCommunity.id,
+          ebookId: communityEbook.id,
+        },
+      },
+      update: {},
+      create: {
+        communityId: nepseCommunity.id,
+        ebookId: communityEbook.id,
+      },
+    });
+
+    await prisma.communityMember.upsert({
+      where: {
+        communityId_userId: {
+          communityId: nepseCommunity.id,
+          userId: admin.id,
+        },
+      },
+      update: { role: "ADMIN" },
+      create: {
+        communityId: nepseCommunity.id,
+        userId: admin.id,
+        role: "ADMIN",
+      },
+    });
+  }
+
   const existingLive = await prisma.liveSession.findFirst({
     where: {
       title: "Monthly NEPSE Live Session",

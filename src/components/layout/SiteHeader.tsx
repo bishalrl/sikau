@@ -78,6 +78,12 @@ export async function SiteHeader() {
                 Ebook
               </Link>
               <Link
+                href="/community"
+                className="block cursor-pointer rounded-lg px-3 py-2.5 text-sm font-semibold text-on-background hover:bg-primary-container/10 hover:text-primary"
+              >
+                Community
+              </Link>
+              <Link
                 href="/blog"
                 className="block cursor-pointer rounded-lg px-3 py-2.5 text-sm font-semibold text-on-background hover:bg-primary-container/10 hover:text-primary"
               >
