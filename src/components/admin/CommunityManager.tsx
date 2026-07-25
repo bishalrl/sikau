@@ -60,7 +60,7 @@ export function CommunityManager({
   ebooks: EbookOption[];
 }) {
   const [communities, setCommunities] = useState(initialCommunities);
-  const [selectedId, setSelectedId] = useState(initialCommunities[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [members, setMembers] = useState<MemberItem[]>([]);
@@ -84,6 +84,16 @@ export function CommunityManager({
     [communities, selectedId],
   );
 
+  const isCreateMode = !selectedId;
+
+  function slugify(value: string) {
+    return value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
   function resetForm() {
     setForm({
       slug: "",
@@ -97,6 +107,10 @@ export function CommunityManager({
       ebookIds: [],
     });
     setSelectedId("");
+    setMembers([]);
+    setAnnouncements([]);
+    setModMessages([]);
+    setMessage("Ready to create a new community.");
   }
 
   function loadIntoForm(community: CommunityItem) {
@@ -113,6 +127,20 @@ export function CommunityManager({
       voice: permissions.voice,
       ebookIds: community.ebookLinks.map((link) => link.ebook.id),
     });
+  }
+
+  function mapCommunity(raw: CommunityItem & { ebookLinks?: CommunityItem["ebookLinks"]; _count?: CommunityItem["_count"] }) {
+    return {
+      id: raw.id,
+      slug: raw.slug,
+      name: raw.name,
+      description: raw.description,
+      coverImage: raw.coverImage,
+      status: raw.status,
+      permissions: typeof raw.permissions === "string" ? raw.permissions : JSON.stringify(raw.permissions ?? {}),
+      ebookLinks: raw.ebookLinks ?? [],
+      _count: raw._count ?? { members: 0, messages: 0 },
+    } satisfies CommunityItem;
   }
 
   async function uploadCover(file: File | null) {
@@ -133,16 +161,26 @@ export function CommunityManager({
   async function refreshList() {
     const response = await fetch("/api/admin/communities");
     const data = await response.json();
-    if (response.ok) setCommunities(data.communities);
+    if (response.ok) {
+      setCommunities((data.communities ?? []).map(mapCommunity));
+    }
   }
 
   async function saveCommunity(event: React.FormEvent) {
     event.preventDefault();
     setSubmitting(true);
     setMessage("");
+
+    const slug = form.slug.trim() ? slugify(form.slug) : slugify(form.name);
+    if (!form.name.trim() || !slug) {
+      setSubmitting(false);
+      setMessage("Name and slug are required.");
+      return;
+    }
+
     const payload = {
-      slug: form.slug,
-      name: form.name,
+      slug,
+      name: form.name.trim(),
       description: form.description,
       coverImage: form.coverImage,
       status: form.status,
@@ -151,9 +189,9 @@ export function CommunityManager({
     };
 
     const response = await fetch(
-      selectedId ? `/api/admin/communities/${selectedId}` : "/api/admin/communities",
+      isCreateMode ? "/api/admin/communities" : `/api/admin/communities/${selectedId}`,
       {
-        method: selectedId ? "PATCH" : "POST",
+        method: isCreateMode ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       },
@@ -164,11 +202,14 @@ export function CommunityManager({
       setMessage(data.error ?? "Unable to save community.");
       return;
     }
-    setMessage(selectedId ? "Community updated." : "Community created.");
-    await refreshList();
-    if (data.community?.id) {
-      loadIntoForm(data.community);
-    }
+
+    const saved = mapCommunity(data.community);
+    setMessage(isCreateMode ? "Community created." : "Community updated.");
+    setCommunities((current) => {
+      const without = current.filter((item) => item.id !== saved.id);
+      return [saved, ...without];
+    });
+    loadIntoForm(saved);
   }
 
   async function archiveSelected() {
@@ -288,10 +329,10 @@ export function CommunityManager({
       <form onSubmit={saveCommunity} className="space-y-4 rounded-3xl border border-outline-variant/30 bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-headline-md text-on-background">
-            {selectedId ? "Edit community" : "Create community"}
+            {isCreateMode ? "Create community" : "Edit community"}
           </h2>
           <Button type="button" variant="outline" onClick={resetForm}>
-            New
+            New community
           </Button>
         </div>
 
@@ -301,7 +342,14 @@ export function CommunityManager({
             <input
               required
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => {
+                const name = e.target.value;
+                setForm((current) => ({
+                  ...current,
+                  name,
+                  slug: isCreateMode ? slugify(name) : current.slug,
+                }));
+              }}
               className="w-full rounded-xl border border-outline-variant/50 px-3 py-2"
             />
           </label>
@@ -310,8 +358,9 @@ export function CommunityManager({
             <input
               required
               value={form.slug}
-              onChange={(e) => setForm({ ...form, slug: e.target.value })}
+              onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })}
               className="w-full rounded-xl border border-outline-variant/50 px-3 py-2"
+              placeholder="my-community"
             />
           </label>
         </div>
@@ -391,7 +440,7 @@ export function CommunityManager({
 
         <div className="flex flex-wrap gap-3">
           <Button type="submit" disabled={submitting}>
-            {submitting ? "Saving..." : selectedId ? "Update community" : "Create community"}
+            {submitting ? "Saving..." : isCreateMode ? "Create community" : "Update community"}
           </Button>
           {selectedId && (
             <Button type="button" variant="outline" onClick={archiveSelected}>
