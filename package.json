@@ -10,7 +10,7 @@
     "fetch-stitch": "node scripts/fetch-stitch-screens.mjs",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "prisma:seed": "node scripts/seed.mjs",
+    "prisma:seed": "prisma generate && prisma db push && node scripts/seed.mjs",
     "copy-pdf-assets": "node scripts/copy-pdf-assets.mjs",
     "postinstall": "prisma generate && node scripts/copy-pdf-assets.mjs"
   },

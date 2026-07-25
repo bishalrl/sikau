@@ -12,6 +12,17 @@ if (!connectionString) {
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+if (!prisma.community?.upsert) {
+  console.error(
+    "Prisma client is missing Community models.\n" +
+      "On the server run:\n" +
+      "  npx prisma generate\n" +
+      "  npx prisma db push\n" +
+      "Then run: npm run prisma:seed",
+  );
+  process.exit(1);
+}
+
 async function main() {
   const adminPassword = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD || "admin123", 10);
   const instructorPassword = await bcrypt.hash(process.env.SEED_INSTRUCTOR_PASSWORD || "instructor123", 10);
