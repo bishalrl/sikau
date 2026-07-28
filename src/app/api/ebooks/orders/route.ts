@@ -17,7 +17,17 @@ export async function POST(request: Request) {
 
   try {
     const input = orderSchema.parse(await request.json());
-    const ebook = await prisma.ebook.findUnique({ where: { slug: input.ebookSlug } });
+    const ebook = await prisma.ebook.findUnique({
+      where: { slug: input.ebookSlug },
+      select: {
+        id: true,
+        slug: true,
+        filePath: true,
+        priceNpr: true,
+        isFree: true,
+        status: true,
+      },
+    });
 
     if (!ebook || ebook.status !== "PUBLISHED") {
       return NextResponse.json({ error: "Ebook not found." }, { status: 404 });

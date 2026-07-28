@@ -498,7 +498,24 @@ export async function getPublishedEbooks(userId?: string) {
   return safeQuery(async () => {
     const records = await prisma.ebook.findMany({
       where: { status: "PUBLISHED" },
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        titleNe: true,
+        description: true,
+        content: true,
+        coverImage: true,
+        filePath: true,
+        priceNpr: true,
+        isFree: true,
+        paymentQrPath: true,
+        paymentInstructions: true,
+        status: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        authorId: true,
         orders: userId ? { where: { userId } } : false,
       },
       orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
@@ -515,7 +532,24 @@ export async function getEbookBySlug(slug: string, userId?: string) {
   return safeQuery(async () => {
     const ebook = await prisma.ebook.findUnique({
       where: { slug },
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        titleNe: true,
+        description: true,
+        content: true,
+        coverImage: true,
+        filePath: true,
+        priceNpr: true,
+        isFree: true,
+        paymentQrPath: true,
+        paymentInstructions: true,
+        status: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        authorId: true,
         orders: userId ? { where: { userId } } : false,
         author: { select: { name: true } },
       },
@@ -537,7 +571,7 @@ export async function getManageableEbooks() {
       include: { author: { select: { name: true, email: true } } },
       orderBy: { updatedAt: "desc" },
     });
-  }, fallbackEbooks as never);
+  }, [] as never);
 }
 
 const NEPSE_LANDING_SLUGS = ["nepse-trading-guide", "nepse-trading-community"] as const;

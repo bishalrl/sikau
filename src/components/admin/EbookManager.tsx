@@ -50,7 +50,15 @@ function toDatetimeLocal(value: string | Date | null | undefined) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function EbookManager({ ebooks }: { ebooks: EbookItem[] }) {
+export function EbookManager({
+  ebooks,
+  siteEbookSlugs,
+  siteEbooksFound,
+}: {
+  ebooks: EbookItem[];
+  siteEbookSlugs: string[];
+  siteEbooksFound: number;
+}) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -58,6 +66,12 @@ export function EbookManager({ ebooks }: { ebooks: EbookItem[] }) {
   const [replacingSitePdf, setReplacingSitePdf] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const sortedEbooks = [...ebooks].sort((a, b) => {
+    const aSite = siteEbookSlugs.includes(a.slug) ? 1 : 0;
+    const bSite = siteEbookSlugs.includes(b.slug) ? 1 : 0;
+    if (aSite !== bSite) return bSite - aSite;
+    return a.title.localeCompare(b.title);
+  });
 
   function loadEbook(ebook: EbookItem) {
     setMessage("");
@@ -183,16 +197,47 @@ export function EbookManager({ ebooks }: { ebooks: EbookItem[] }) {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-3xl border border-primary/20 bg-primary-container/5 p-5">
+        <h2 className="font-headline-md text-on-background">Live site ebooks</h2>
+        <p className="mt-1 text-sm text-on-surface-variant">
+          These are the ebooks used on the public `/ebooks` page and payment flow.
+        </p>
+        <p className="mt-2 text-sm text-on-background">
+          Found {siteEbooksFound} of {siteEbookSlugs.length}: {siteEbookSlugs.map((slug, index) => (
+            <span key={slug}>
+              {index > 0 ? ", " : ""}
+              <code>{slug}</code>
+            </span>
+          ))}
+        </p>
+        {siteEbooksFound === 0 && (
+          <p className="mt-2 text-sm text-red-600">
+            No live site ebook records were loaded from the database. This is not dummy content now; it usually means the
+            database is missing the seeded NEPSE ebooks or the latest schema changes.
+          </p>
+        )}
+      </div>
+
       <div className="grid gap-4 md:grid-cols-3">
-        {ebooks.map((ebook) => (
+        {sortedEbooks.map((ebook) => (
           <div
             key={ebook.id}
             className={`rounded-3xl border bg-white p-5 ${
               form.id === ebook.id ? "border-primary ring-2 ring-primary/20" : "border-outline-variant/30"
             }`}
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">{ebook.status}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">{ebook.status}</p>
+              {siteEbookSlugs.includes(ebook.slug) && (
+                <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+                  Live on /ebooks
+                </span>
+              )}
+            </div>
             <h3 className="mt-2 font-headline-md text-on-background">{ebook.title}</h3>
+            <p className="mt-1 text-xs text-on-surface-variant">
+              <code>{ebook.slug}</code>
+            </p>
             <p className="mt-1 text-sm text-on-surface-variant">
               {ebook.isFree ? "Free" : `NPR ${ebook.priceNpr.toLocaleString()}`}
               {!ebook.isFree && ebook.listPriceNpr != null && ebook.listPriceNpr > ebook.priceNpr
@@ -269,6 +314,10 @@ export function EbookManager({ ebooks }: { ebooks: EbookItem[] }) {
           <p className="mt-1 text-sm text-on-surface-variant">
             Upload a PDF for this ebook. Use &quot;Update site PDF&quot; to replace the main NEPSE file
             (<code>e-book.pdf</code>) that all bundled packages read.
+          </p>
+          <p className="mt-2 text-xs text-on-surface-variant">
+            If you only want to update the real NEPSE book already on the site, click <strong>Edit</strong> on the card
+            marked <strong>Live on /ebooks</strong>, upload the PDF, then click <strong>Update site PDF</strong>.
           </p>
           <label className="mt-3 block text-sm font-medium text-on-background">
             Upload ebook PDF

@@ -49,7 +49,7 @@ export default async function EbookPayPage({
           <div className="mt-6 rounded-3xl border border-dashed border-outline-variant/50 bg-surface-container-low p-8 text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={SITE_ASSETS.qr}
+              src={ebook.paymentQrPath || SITE_ASSETS.qr}
               alt={`${ebook.title} payment QR`}
               className="mx-auto h-72 w-72 rounded-2xl bg-white object-contain p-3"
             />

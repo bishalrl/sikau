@@ -21,7 +21,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Ebook and receipt are required." }, { status: 400 });
     }
 
-    const ebook = await prisma.ebook.findUnique({ where: { slug: ebookSlug } });
+    const ebook = await prisma.ebook.findUnique({
+      where: { slug: ebookSlug },
+      select: {
+        id: true,
+        slug: true,
+        priceNpr: true,
+      },
+    });
     if (!ebook) {
       return NextResponse.json({ error: "Ebook not found." }, { status: 404 });
     }
