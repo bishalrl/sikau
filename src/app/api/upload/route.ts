@@ -33,19 +33,36 @@ export async function POST(request: Request) {
       if (!communityId) {
         return NextResponse.json({ error: "communityId required." }, { status: 400 });
       }
-      const membership = await prisma.communityMember.findUnique({
-        where: {
-          communityId_userId: {
+      if (session.user.role === "ADMIN") {
+        await prisma.communityMember.upsert({
+          where: {
+            communityId_userId: {
+              communityId,
+              userId: session.user.id,
+            },
+          },
+          update: { role: "ADMIN", bannedAt: null, mutedUntil: null },
+          create: {
             communityId,
             userId: session.user.id,
+            role: "ADMIN",
           },
-        },
-      });
-      if (!membership || membership.bannedAt) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-      if (membership.mutedUntil && membership.mutedUntil.getTime() > Date.now()) {
-        return NextResponse.json({ error: "You are muted." }, { status: 403 });
+        });
+      } else {
+        const membership = await prisma.communityMember.findUnique({
+          where: {
+            communityId_userId: {
+              communityId,
+              userId: session.user.id,
+            },
+          },
+        });
+        if (!membership || membership.bannedAt) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+        if (membership.mutedUntil && membership.mutedUntil.getTime() > Date.now()) {
+          return NextResponse.json({ error: "You are muted." }, { status: 403 });
+        }
       }
     } else {
       return NextResponse.json({ error: "Invalid upload folder." }, { status: 400 });

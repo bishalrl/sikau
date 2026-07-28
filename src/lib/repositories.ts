@@ -540,6 +540,24 @@ export async function getManageableEbooks() {
   }, fallbackEbooks as never);
 }
 
+const NEPSE_LANDING_SLUGS = ["nepse-trading-guide", "nepse-trading-community"] as const;
+
+export async function getNepseLandingEbookPricing() {
+  return safeQuery(async () => {
+    const records = await prisma.ebook.findMany({
+      where: { slug: { in: [...NEPSE_LANDING_SLUGS] }, status: "PUBLISHED" },
+      select: {
+        slug: true,
+        priceNpr: true,
+        listPriceNpr: true,
+        promoEndsAt: true,
+        isFree: true,
+      },
+    });
+    return records;
+  }, [] as never);
+}
+
 export async function getPendingEbookOrders() {
   return safeQuery(async () => {
     return prisma.ebookOrder.findMany({

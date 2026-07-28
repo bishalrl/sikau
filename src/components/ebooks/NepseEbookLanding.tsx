@@ -2,17 +2,26 @@ import Image from "next/image";
 import Link from "next/link";
 import { EbookBuyButton } from "@/components/ebooks/EbookBuyButton";
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
+import { formatPromoEndsLabel, getEbookDisplayPricing } from "@/lib/ebook-pricing";
 import { SITE_ASSETS } from "@/lib/site-assets";
 
 const EBOOK_SLUG = "nepse-trading-guide";
 const COMMUNITY_SLUG = "nepse-trading-community";
 
-const packages = [
+type DbPricing = {
+  slug: string;
+  priceNpr: number;
+  listPriceNpr: number | null;
+  promoEndsAt: Date | null;
+  isFree: boolean;
+};
+
+const packageMeta = [
   {
     id: "ebook",
     slug: EBOOK_SLUG,
     name: "Ebook Only",
-    price: 599,
+    fallbackPrice: 599,
     popular: false,
     summary: "Get the complete NEPSE trading guide and learn at your own pace.",
     features: [
@@ -28,7 +37,7 @@ const packages = [
     id: "community",
     slug: COMMUNITY_SLUG,
     name: "Lifetime Community Access",
-    price: 999,
+    fallbackPrice: 999,
     popular: true,
     summary: "Everything in the ebook, plus ongoing mentorship and live sessions.",
     features: [
@@ -40,7 +49,47 @@ const packages = [
     ],
     cta: "Join Community Bundle",
   },
-];
+] as const;
+
+function buildPackages(pricingRows: DbPricing[]) {
+  const bySlug = new Map(pricingRows.map((row) => [row.slug, row]));
+
+  return packageMeta.map((meta) => {
+    const db = bySlug.get(meta.slug);
+    const display = db
+      ? getEbookDisplayPricing(db)
+      : getEbookDisplayPricing({ priceNpr: meta.fallbackPrice, isFree: false });
+
+    return {
+      ...meta,
+      price: display.price || meta.fallbackPrice,
+      listPrice: display.listPrice,
+      promoActive: display.promoActive,
+      promoEndsAt: db?.promoEndsAt ?? null,
+    };
+  });
+}
+
+function NepsePrice({
+  price,
+  listPrice,
+  compact,
+}: {
+  price: number;
+  listPrice: number | null;
+  compact?: boolean;
+}) {
+  return (
+    <p className={compact ? "nepse-price-card__amount" : "nepse-package__price"}>
+      {listPrice != null && (
+        <span className="nepse-price__was">Rs {listPrice.toLocaleString()}</span>
+      )}
+      <span className={compact ? undefined : "nepse-price__now"}>
+        {compact ? `Rs ${price.toLocaleString()}` : <>Rs <span>{price}</span></>}
+      </span>
+    </p>
+  );
+}
 
 const phases = [
   { phase: "Phase 1", title: "Mindset & Introduction", detail: "Build the right foundation before you place a single trade." },
@@ -66,9 +115,22 @@ const comparisonRows = [
   { label: "Ongoing Q&A and accountability", ebook: false, community: true },
 ];
 
-export default function EbooksLandingPage() {
+export default function NepseEbookLanding({ pricingRows = [] }: { pricingRows?: DbPricing[] }) {
+  const packages = buildPackages(pricingRows);
+  const ebookPkg = packages.find((p) => p.slug === EBOOK_SLUG)!;
+  const communityPkg = packages.find((p) => p.slug === COMMUNITY_SLUG)!;
+  const promoPkg = packages.find((p) => p.promoActive && p.promoEndsAt);
+
   return (
     <div className="nepse-landing">
+      {promoPkg?.promoEndsAt && (
+        <div className="nepse-promo-banner" role="status">
+          <MaterialIcon name="schedule" className="text-[20px]" />
+          <span>
+            Limited-time pricing — offer ends {formatPromoEndsLabel(promoPkg.promoEndsAt)}
+          </span>
+        </div>
+      )}
       {/* Hero */}
       <section className="nepse-hero">
         <div className="nepse-hero__glow" aria-hidden="true" />
@@ -130,9 +192,7 @@ export default function EbooksLandingPage() {
               >
                 {pkg.popular && <span className="nepse-package__badge">Popular</span>}
                 <h3 className="nepse-package__name">{pkg.name}</h3>
-                <p className="nepse-package__price">
-                  Rs <span>{pkg.price}</span>
-                </p>
+                <NepsePrice price={pkg.price} listPrice={pkg.listPrice} />
                 <p className="nepse-package__summary">{pkg.summary}</p>
                 <ul className="nepse-package__features">
                   {pkg.features.map((feature) => (
@@ -209,8 +269,8 @@ export default function EbooksLandingPage() {
               <thead>
                 <tr>
                   <th scope="col">What&apos;s included</th>
-                  <th scope="col">Ebook<br /><span>Rs 599</span></th>
-                  <th scope="col">Community<br /><span>Rs 999 · Popular</span></th>
+                  <th scope="col">Ebook<br /><span>Rs {ebookPkg.price}</span></th>
+                  <th scope="col">Community<br /><span>Rs {communityPkg.price} · Popular</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -259,12 +319,14 @@ export default function EbooksLandingPage() {
               <div key={pkg.id} className={`nepse-price-card ${pkg.popular ? "nepse-price-card--popular" : ""}`}>
                 {pkg.popular && <span className="nepse-package__badge">Popular</span>}
                 <p className="nepse-price-card__name">{pkg.name}</p>
-                <p className="nepse-price-card__amount">
-                  Rs {pkg.price.toLocaleString()}
-                </p>
+                <NepsePrice price={pkg.price} listPrice={pkg.listPrice} compact />
                 <EbookBuyButton
                   ebookSlug={pkg.slug}
-                  label={pkg.popular ? "Start Your Trading Journey Now" : "Buy Ebook — Rs 599"}
+                  label={
+                    pkg.popular
+                      ? "Start Your Trading Journey Now"
+                      : `Buy Ebook — Rs ${pkg.price.toLocaleString()}`
+                  }
                   variant={pkg.popular ? "primary" : "outline"}
                 />
               </div>

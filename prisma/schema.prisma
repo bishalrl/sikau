@@ -260,6 +260,8 @@ model Ebook {
   coverImage          String?
   filePath            String?
   priceNpr            Int           @default(0)
+  listPriceNpr        Int?
+  promoEndsAt         DateTime?
   isFree              Boolean       @default(true)
   paymentQrPath       String?
   paymentInstructions String?

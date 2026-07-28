@@ -14,6 +14,16 @@ const ebookSchema = z.object({
   coverImage: z.string().optional().or(z.literal("")),
   filePath: z.string().optional().or(z.literal("")),
   priceNpr: z.coerce.number().min(0).default(0),
+  listPriceNpr: z.coerce.number().min(0).optional().nullable(),
+  promoEndsAt: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((value) => {
+      if (!value || !value.trim()) return null;
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }),
   isFree: z.boolean().default(true),
   paymentQrPath: z.string().optional().or(z.literal("")),
   paymentInstructions: z.string().optional(),
@@ -40,6 +50,8 @@ export async function POST(request: Request) {
         coverImage: input.coverImage || null,
         filePath: input.filePath || null,
         priceNpr: isFree ? 0 : input.priceNpr,
+        listPriceNpr: isFree ? null : input.listPriceNpr ?? null,
+        promoEndsAt: isFree ? null : input.promoEndsAt ?? null,
         isFree,
         paymentQrPath: input.paymentQrPath || null,
         paymentInstructions: input.paymentInstructions,
@@ -55,6 +67,8 @@ export async function POST(request: Request) {
         coverImage: input.coverImage || null,
         filePath: input.filePath || null,
         priceNpr: isFree ? 0 : input.priceNpr,
+        listPriceNpr: isFree ? null : input.listPriceNpr ?? null,
+        promoEndsAt: isFree ? null : input.promoEndsAt ?? null,
         isFree,
         paymentQrPath: input.paymentQrPath || null,
         paymentInstructions: input.paymentInstructions,

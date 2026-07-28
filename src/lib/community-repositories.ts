@@ -20,13 +20,42 @@ const messageInclude = {
 } satisfies Prisma.CommunityMessageInclude;
 
 export async function getManageableCommunities() {
-  return prisma.community.findMany({
+  const communities = await prisma.community.findMany({
     include: {
       ebookLinks: { include: { ebook: { select: { id: true, slug: true, title: true } } } },
       _count: { select: { members: true, messages: true } },
     },
     orderBy: { updatedAt: "desc" },
   });
+
+  const withLast = [];
+  for (const community of communities) {
+    const lastMessage = await prisma.communityMessage.findFirst({
+      where: { communityId: community.id, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+      include: { author: { select: { name: true } } },
+    });
+    withLast.push({
+      ...community,
+      lastMessage: lastMessage
+        ? {
+            id: lastMessage.id,
+            body: lastMessage.body,
+            type: lastMessage.type,
+            createdAt: lastMessage.createdAt,
+            authorName: lastMessage.author.name ?? "Member",
+          }
+        : null,
+    });
+  }
+
+  withLast.sort((a, b) => {
+    const aTime = a.lastMessage?.createdAt?.getTime() ?? a.updatedAt.getTime();
+    const bTime = b.lastMessage?.createdAt?.getTime() ?? b.updatedAt.getTime();
+    return bTime - aTime;
+  });
+
+  return withLast;
 }
 
 export async function getCommunityById(id: string) {

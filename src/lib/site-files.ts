@@ -1,4 +1,4 @@
-import { access, readFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { contentTypeForFileName } from "@/lib/local-storage";
 
@@ -37,4 +37,20 @@ export async function readSiteAsset(fileName: string) {
   } catch {
     return null;
   }
+}
+
+export async function writeSiteAsset(fileName: string, data: Buffer) {
+  if (
+    !ALLOWED_SITE_FILES.has(fileName) ||
+    fileName.includes("..") ||
+    fileName.includes("/") ||
+    fileName.includes("\\")
+  ) {
+    return false;
+  }
+
+  const root = getSiteAssetsRoot();
+  await mkdir(root, { recursive: true });
+  await writeFile(path.join(root, fileName), data);
+  return true;
 }

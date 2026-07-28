@@ -1,5 +1,7 @@
 import NepseEbookLanding from "@/components/ebooks/NepseEbookLanding";
+import { getNepseLandingEbookPricing } from "@/lib/repositories";
 
-export default function EbooksPage() {
-  return <NepseEbookLanding />;
+export default async function EbooksPage() {
+  const pricingRows = await getNepseLandingEbookPricing();
+  return <NepseEbookLanding pricingRows={pricingRows} />;
 }

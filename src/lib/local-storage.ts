@@ -85,6 +85,14 @@ export async function readUploadedFile(folder: string, fileName: string) {
   return null;
 }
 
+/** Resolve `/uploads/{folder}/{file}` from saveUploadedFile. */
+export async function readUploadedFileByPublicPath(publicPath: string) {
+  const match = /^\/uploads\/([^/]+)\/([^/]+)$/.exec(publicPath);
+  if (!match) return null;
+  const [, folder, fileName] = match;
+  return readUploadedFile(folder, fileName);
+}
+
 export function contentTypeForFileName(fileName: string) {
   const ext = path.extname(fileName).toLowerCase();
   switch (ext) {
