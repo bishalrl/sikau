@@ -651,7 +651,7 @@ export async function getUpcomingLiveSessions() {
       include: {
         host: { select: { id: true, name: true, email: true } },
       },
-      orderBy: [{ status: "asc" }, { scheduledAt: "asc" }],
+      orderBy: [{ scheduledAt: "asc" }],
     });
   }, []);
 }

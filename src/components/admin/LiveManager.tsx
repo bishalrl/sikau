@@ -86,7 +86,8 @@ export function LiveManager({ sessions: initial }: Props) {
       <form onSubmit={createSession} className="space-y-4 rounded-3xl border border-outline-variant/30 bg-white p-6">
         <h2 className="font-headline-md text-on-background">Schedule a live session</h2>
         <p className="text-sm text-on-surface-variant">
-          Set the start time first. Users will see it on their dashboard; Join unlocks at that time after you start.
+          Set the start time first. Sessions appear on the homepage and dashboard by date. Join unlocks at that
+          time after you start.
         </p>
         <div>
           <label className="mb-1 block text-sm font-medium">Title</label>
