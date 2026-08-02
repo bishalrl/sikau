@@ -14,6 +14,7 @@ export function GuestBottomNav({ isLoggedIn = false }: Props) {
   if (
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
+    pathname.startsWith("/verify-email") ||
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/community/") ||

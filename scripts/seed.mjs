@@ -30,35 +30,44 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@sikaupaisa.com" },
-    update: {},
+    update: { emailVerifiedAt: new Date() },
     create: {
       name: "Admin",
       email: "admin@sikaupaisa.com",
       passwordHash: adminPassword,
       role: UserRole.ADMIN,
+      emailVerifiedAt: new Date(),
     },
   });
 
   const instructor = await prisma.user.upsert({
     where: { email: "instructor@sikaupaisa.com" },
-    update: {},
+    update: { emailVerifiedAt: new Date() },
     create: {
       name: "Raju Khatiwada",
       email: "instructor@sikaupaisa.com",
       passwordHash: instructorPassword,
       role: UserRole.INSTRUCTOR,
+      emailVerifiedAt: new Date(),
     },
   });
 
   await prisma.user.upsert({
     where: { email: "learner@sikaupaisa.com" },
-    update: {},
+    update: { emailVerifiedAt: new Date() },
     create: {
       name: "Learner Demo",
       email: "learner@sikaupaisa.com",
       passwordHash: learnerPassword,
       role: UserRole.LEARNER,
+      emailVerifiedAt: new Date(),
     },
+  });
+
+  // Existing accounts created before OTP signup stay able to log in.
+  await prisma.user.updateMany({
+    where: { emailVerifiedAt: null, emailOtpHash: null },
+    data: { emailVerifiedAt: new Date() },
   });
 
   const budgeting = await prisma.course.upsert({

@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 
 type Props = {
   mode: "login" | "signup";
 };
+
+const PENDING_SIGNUP_KEY = "sikau_pending_signup";
 
 export function AuthForm({ mode }: Props) {
   const router = useRouter();
@@ -30,16 +31,49 @@ export function AuthForm({ mode }: Props) {
       if (mode === "signup") {
         const response = await fetch("/api/register", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email, password, role }),
         });
 
         const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error ?? "Unable to create account.");
+
+        // Always move to OTP screen when account exists/needs verification.
+        if (response.ok || data.needsVerification) {
+          sessionStorage.setItem(
+            PENDING_SIGNUP_KEY,
+            JSON.stringify({ email: email.toLowerCase(), password }),
+          );
+          router.push(
+            `/verify-email?email=${encodeURIComponent(email.toLowerCase())}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+          );
+          return;
         }
+
+        throw new Error(data.error ?? "Unable to create account.");
+      }
+
+      const { signIn } = await import("next-auth/react");
+
+      const checkResponse = await fetch("/api/auth/credentials-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const checkData = await checkResponse.json();
+
+      if (checkData.needsVerification) {
+        sessionStorage.setItem(
+          PENDING_SIGNUP_KEY,
+          JSON.stringify({ email: email.toLowerCase(), password }),
+        );
+        router.push(
+          `/verify-email?email=${encodeURIComponent(email.toLowerCase())}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        );
+        return;
+      }
+
+      if (!checkResponse.ok) {
+        throw new Error(checkData.error ?? "Invalid email or password.");
       }
 
       const result = await signIn("credentials", {

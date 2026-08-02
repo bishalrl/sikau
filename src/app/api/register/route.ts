@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { issueEmailOtp } from "@/lib/email-otp";
 import { prisma } from "@/lib/prisma";
 
 const registerSchema = z.object({
@@ -20,26 +21,55 @@ export async function POST(request: Request) {
       where: { email },
     });
 
-    if (existingUser) {
+    if (existingUser?.emailVerifiedAt) {
       return NextResponse.json({ error: "Email already registered." }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(parsed.password, 10);
-    const user = await prisma.user.create({
-      data: {
-        name: parsed.name,
-        email,
-        passwordHash,
-        role: parsed.role,
-      },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-      },
-    });
 
-    return NextResponse.json({ user }, { status: 201 });
+    const user = existingUser
+      ? await prisma.user.update({
+          where: { id: existingUser.id },
+          data: {
+            name: parsed.name,
+            passwordHash,
+            role: parsed.role,
+          },
+          select: { id: true, email: true, role: true },
+        })
+      : await prisma.user.create({
+          data: {
+            name: parsed.name,
+            email,
+            passwordHash,
+            role: parsed.role,
+          },
+          select: { id: true, email: true, role: true },
+        });
+
+    try {
+      await issueEmailOtp(user.id, email);
+    } catch (mailError) {
+      console.error("OTP email failed:", mailError);
+      return NextResponse.json(
+        {
+          error:
+            "Account created, but we could not send the verification email. Check SMTP settings and try resending the code.",
+          needsVerification: true,
+          email,
+        },
+        { status: 503 },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        needsVerification: true,
+        email,
+        message: "We sent a 6-digit verification code to your email.",
+      },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message ?? "Invalid request." }, { status: 400 });
