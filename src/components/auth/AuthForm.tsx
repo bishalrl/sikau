@@ -54,7 +54,7 @@ export function AuthForm({ mode }: Props) {
 
       const { signIn } = await import("next-auth/react");
 
-      const checkResponse = await fetch("/api/auth/credentials-check", {
+      const checkResponse = await fetch("/api/otp/credentials-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

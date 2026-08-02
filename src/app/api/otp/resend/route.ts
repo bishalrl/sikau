@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     } catch (mailError) {
       console.error("Resend OTP failed:", mailError);
       return NextResponse.json(
-        { error: "Unable to send verification email. Check SMTP settings." },
+        { error: "Unable to send verification email. Check SMTP settings on the server." },
         { status: 503 },
       );
     }
