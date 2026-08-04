@@ -26,39 +26,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Course not found." }, { status: 404 });
     }
 
-    const enrollment = await prisma.enrollment.findUnique({
+    if (course.priceNpr <= 0) {
+      return NextResponse.json({ error: "This course is free — no payment needed." }, { status: 400 });
+    }
+
+    const receiptPath = await saveUploadedFile(receipt, "receipts");
+
+    // Create enrollment + payment only when the learner finishes by uploading a receipt.
+    const enrollment = await prisma.enrollment.upsert({
       where: {
         userId_courseId: {
           userId: session.user.id,
           courseId: course.id,
         },
       },
+      update: {
+        paymentStatus: PaymentStatus.PENDING,
+      },
+      create: {
+        userId: session.user.id,
+        courseId: course.id,
+        paymentStatus: PaymentStatus.PENDING,
+      },
     });
 
-    if (!enrollment) {
-      return NextResponse.json({ error: "Enroll before uploading a receipt." }, { status: 404 });
-    }
-
-    const receiptPath = await saveUploadedFile(receipt, "receipts");
     const payment = await prisma.payment.upsert({
       where: { enrollmentId: enrollment.id },
       update: {
+        amount: course.priceNpr,
         receiptPath,
-        notes,
+        notes: notes || null,
         status: PaymentStatus.PENDING,
       },
       create: {
         enrollmentId: enrollment.id,
         amount: course.priceNpr,
         receiptPath,
-        notes,
+        notes: notes || null,
         status: PaymentStatus.PENDING,
       },
-    });
-
-    await prisma.enrollment.update({
-      where: { id: enrollment.id },
-      data: { paymentStatus: PaymentStatus.PENDING },
     });
 
     return NextResponse.json({ payment });

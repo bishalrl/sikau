@@ -39,7 +39,11 @@ export default async function EbookPayPage({
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm font-semibold uppercase tracking-wide text-primary">Ebook Payment</p>
             <Badge variant="emerald">
-              {ebook.paymentStatus === "REJECTED" ? "Rejected — re-upload" : "Awaiting approval"}
+              {ebook.paymentStatus === "REJECTED"
+                ? "Rejected — re-upload"
+                : ebook.order?.receiptPath
+                  ? "Awaiting approval"
+                  : "Pay, then upload receipt"}
             </Badge>
           </div>
           <h1 className="mt-3 font-display-md text-display-md text-on-background">{ebook.title}</h1>

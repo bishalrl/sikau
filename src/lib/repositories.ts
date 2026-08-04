@@ -313,11 +313,23 @@ export async function getAdminOverview() {
     const [users, courses, payments, content, blogs, ebooks, ebookOrders, newsletter] = await Promise.all([
       prisma.user.count({ where: { emailVerifiedAt: { not: null } } }),
       prisma.course.count(),
-      prisma.payment.count({ where: { status: PaymentStatus.PENDING } }),
+      prisma.payment.count({
+        where: {
+          status: PaymentStatus.PENDING,
+          receiptPath: { not: null },
+          NOT: { receiptPath: "" },
+        },
+      }),
       prisma.websiteContent.count(),
       prisma.blogPost.count(),
       prisma.ebook.count(),
-      prisma.ebookOrder.count({ where: { paymentStatus: PaymentStatus.PENDING } }),
+      prisma.ebookOrder.count({
+        where: {
+          paymentStatus: PaymentStatus.PENDING,
+          receiptPath: { not: null },
+          NOT: { receiptPath: "" },
+        },
+      }),
       prisma.newsletterSubscriber.count(),
     ]);
 
@@ -432,8 +444,27 @@ export async function getManageableCourses(user?: SessionUser | null) {
 
 export async function getPendingPayments() {
   return safeQuery(async () => {
+    // Drop incomplete checkouts that never uploaded a receipt (legacy noise).
+    await prisma.payment.deleteMany({
+      where: {
+        status: PaymentStatus.PENDING,
+        OR: [{ receiptPath: null }, { receiptPath: "" }],
+      },
+    });
+
+    await prisma.enrollment.deleteMany({
+      where: {
+        paymentStatus: PaymentStatus.PENDING,
+        payment: null,
+      },
+    });
+
     return prisma.payment.findMany({
-      where: { status: PaymentStatus.PENDING },
+      where: {
+        status: PaymentStatus.PENDING,
+        receiptPath: { not: null },
+        NOT: { receiptPath: "" },
+      },
       include: {
         enrollment: {
           include: {
@@ -633,8 +664,19 @@ export async function getNepseLandingEbookPricing() {
 
 export async function getPendingEbookOrders() {
   return safeQuery(async () => {
+    await prisma.ebookOrder.deleteMany({
+      where: {
+        paymentStatus: PaymentStatus.PENDING,
+        OR: [{ receiptPath: null }, { receiptPath: "" }],
+      },
+    });
+
     return prisma.ebookOrder.findMany({
-      where: { paymentStatus: PaymentStatus.PENDING },
+      where: {
+        paymentStatus: PaymentStatus.PENDING,
+        receiptPath: { not: null },
+        NOT: { receiptPath: "" },
+      },
       include: {
         ebook: true,
         user: true,

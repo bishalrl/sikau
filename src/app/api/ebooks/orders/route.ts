@@ -34,7 +34,15 @@ export async function POST(request: Request) {
     }
 
     const isFree = ebook.isFree || ebook.priceNpr <= 0;
-    const paymentStatus = isFree ? PaymentStatus.APPROVED : PaymentStatus.PENDING;
+
+    // Paid ebooks: no order row until receipt is uploaded on the pay page.
+    if (!isFree) {
+      return NextResponse.json({
+        paymentStatus: null,
+        redirectTo: `/ebooks/${ebook.slug}/pay`,
+        downloadPath: null,
+      });
+    }
 
     const order = await prisma.ebookOrder.upsert({
       where: {
@@ -43,21 +51,21 @@ export async function POST(request: Request) {
           ebookId: ebook.id,
         },
       },
-      update: isFree ? { paymentStatus: PaymentStatus.APPROVED, amount: 0 } : {},
+      update: { paymentStatus: PaymentStatus.APPROVED, amount: 0 },
       create: {
         userId: session.user.id,
         ebookId: ebook.id,
-        amount: ebook.priceNpr,
-        paymentStatus,
-        notes: isFree ? "Free ebook — auto approved." : null,
+        amount: 0,
+        paymentStatus: PaymentStatus.APPROVED,
+        notes: "Free ebook — auto approved.",
       },
     });
 
     return NextResponse.json({
       orderId: order.id,
-      paymentStatus,
-      redirectTo: isFree ? `/ebooks/${ebook.slug}/read` : `/ebooks/${ebook.slug}/pay`,
-      downloadPath: isFree ? ebook.filePath : null,
+      paymentStatus: PaymentStatus.APPROVED,
+      redirectTo: `/ebooks/${ebook.slug}/read`,
+      downloadPath: ebook.filePath,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

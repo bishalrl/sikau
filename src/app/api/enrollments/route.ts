@@ -26,7 +26,14 @@ export async function POST(request: Request) {
     }
 
     const isFree = course.priceNpr <= 0;
-    const paymentStatus = isFree ? PaymentStatus.APPROVED : PaymentStatus.PENDING;
+
+    // Paid courses: no DB rows until receipt is uploaded on the payment page.
+    if (!isFree) {
+      return NextResponse.json({
+        paymentStatus: null,
+        redirectTo: `/payment/${course.slug}`,
+      });
+    }
 
     const enrollment = await prisma.enrollment.upsert({
       where: {
@@ -35,44 +42,40 @@ export async function POST(request: Request) {
           courseId: course.id,
         },
       },
-      update: isFree
-        ? {
-            paymentStatus: PaymentStatus.APPROVED,
-          }
-        : {},
+      update: {
+        paymentStatus: PaymentStatus.APPROVED,
+      },
       create: {
         userId: session.user.id,
         courseId: course.id,
-        paymentStatus,
+        paymentStatus: PaymentStatus.APPROVED,
       },
     });
 
-    const payment = await prisma.payment.upsert({
+    await prisma.payment.upsert({
       where: { enrollmentId: enrollment.id },
       update: {
-        amount: course.priceNpr,
-        status: isFree ? PaymentStatus.APPROVED : PaymentStatus.PENDING,
+        amount: 0,
+        status: PaymentStatus.APPROVED,
+        notes: "Free course — auto approved.",
       },
       create: {
         enrollmentId: enrollment.id,
-        amount: course.priceNpr,
-        status: isFree ? PaymentStatus.APPROVED : PaymentStatus.PENDING,
-        notes: isFree ? "Free course — auto approved." : null,
+        amount: 0,
+        status: PaymentStatus.APPROVED,
+        notes: "Free course — auto approved.",
       },
     });
 
-    if (isFree) {
-      await prisma.course.update({
-        where: { id: course.id },
-        data: { studentsCount: { increment: 1 } },
-      });
-    }
+    await prisma.course.update({
+      where: { id: course.id },
+      data: { studentsCount: { increment: 1 } },
+    });
 
     return NextResponse.json({
       enrollmentId: enrollment.id,
-      paymentId: payment.id,
-      paymentStatus,
-      redirectTo: isFree ? `/study/${course.slug}` : `/payment/${course.slug}`,
+      paymentStatus: PaymentStatus.APPROVED,
+      redirectTo: `/study/${course.slug}`,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

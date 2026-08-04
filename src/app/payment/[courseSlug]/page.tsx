@@ -1,11 +1,9 @@
 import Link from "next/link";
-import { PaymentStatus } from "@prisma/client";
 import { notFound, redirect } from "next/navigation";
 import { ReceiptUploadForm } from "@/components/payment/ReceiptUploadForm";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { prisma } from "@/lib/prisma";
 import { getCourseBySlug } from "@/lib/repositories";
 import { getCurrentSession } from "@/lib/session";
 
@@ -30,43 +28,13 @@ export default async function PaymentPage({
     redirect(`/study/${course.slug}`);
   }
 
-  let enrollment = Array.isArray(course.enrollments) ? course.enrollments[0] : null;
-
-  if (!enrollment) {
-    const created = await prisma.enrollment.upsert({
-      where: {
-        userId_courseId: {
-          userId: session.user.id,
-          courseId: course.id,
-        },
-      },
-      update: {},
-      create: {
-        userId: session.user.id,
-        courseId: course.id,
-        paymentStatus: PaymentStatus.PENDING,
-      },
-    });
-
-    await prisma.payment.upsert({
-      where: { enrollmentId: created.id },
-      update: { amount: course.priceNpr },
-      create: {
-        enrollmentId: created.id,
-        amount: course.priceNpr,
-        status: PaymentStatus.PENDING,
-      },
-    });
-
-    const refreshed = await getCourseBySlug(courseSlug, session.user.id);
-    enrollment = Array.isArray(refreshed?.enrollments) ? refreshed!.enrollments[0] : null;
-  }
-
+  const enrollment = Array.isArray(course.enrollments) ? course.enrollments[0] : null;
   const payment =
     enrollment && "payment" in enrollment
       ? ((enrollment as { payment?: { receiptPath: string | null } | null }).payment ?? null)
       : null;
-  const status = enrollment?.paymentStatus ?? "PENDING";
+  const status = enrollment?.paymentStatus ?? null;
+  const hasReceipt = Boolean(payment?.receiptPath);
 
   if (status === "APPROVED") {
     redirect(`/study/${course.slug}`);
@@ -85,7 +53,11 @@ export default async function PaymentPage({
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm font-semibold uppercase tracking-wide text-primary">Manual Payment</p>
             <Badge variant={status === "REJECTED" ? "default" : "emerald"}>
-              {status === "REJECTED" ? "Rejected — re-upload receipt" : "Awaiting admin approval"}
+              {status === "REJECTED"
+                ? "Rejected — re-upload receipt"
+                : hasReceipt
+                  ? "Awaiting admin approval"
+                  : "Pay, then upload receipt"}
             </Badge>
           </div>
           <h1 className="mt-3 font-display-md text-display-md text-on-background">{course.title}</h1>
@@ -131,7 +103,7 @@ export default async function PaymentPage({
             )}
           </div>
 
-          {status === "PENDING" && payment?.receiptPath && (
+          {status === "PENDING" && hasReceipt && (
             <p className="mt-4 rounded-xl bg-primary-container/10 px-4 py-3 text-sm text-on-surface-variant">
               Receipt received. Study access unlocks after admin approval.
             </p>
