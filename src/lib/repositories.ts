@@ -311,7 +311,7 @@ export async function getDashboardData(user?: SessionUser | null) {
 export async function getAdminOverview() {
   return safeQuery(async () => {
     const [users, courses, payments, content, blogs, ebooks, ebookOrders, newsletter] = await Promise.all([
-      prisma.user.count(),
+      prisma.user.count({ where: { emailVerifiedAt: { not: null } } }),
       prisma.course.count(),
       prisma.payment.count({ where: { status: PaymentStatus.PENDING } }),
       prisma.websiteContent.count(),
@@ -339,6 +339,45 @@ export async function getAdminOverview() {
     ebooks: 0,
     newsletter: 0,
   });
+}
+
+export type VerifiedUserRow = {
+  id: string;
+  name: string | null;
+  email: string;
+  role: "ADMIN" | "INSTRUCTOR" | "LEARNER";
+  authProvider: string;
+  emailVerifiedAt: Date;
+  createdAt: Date;
+};
+
+export async function getVerifiedUsers(): Promise<VerifiedUserRow[]> {
+  return safeQuery(async () => {
+    const users = await prisma.user.findMany({
+      where: { emailVerifiedAt: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        authProvider: true,
+        passwordHash: true,
+        emailVerifiedAt: true,
+        createdAt: true,
+      },
+    });
+
+    return users.map((user) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      authProvider: user.authProvider || (user.passwordHash ? "email" : "google"),
+      emailVerifiedAt: user.emailVerifiedAt as Date,
+      createdAt: user.createdAt,
+    }));
+  }, [] as VerifiedUserRow[]);
 }
 
 export type NewsletterSubscriberRow = {

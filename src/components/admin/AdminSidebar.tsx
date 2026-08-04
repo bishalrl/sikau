@@ -31,6 +31,7 @@ const links: NavLink[] = [
   { href: "/admin/communities", label: "Communities", icon: Users, description: "Groups & chat" },
   { href: "/admin/live", label: "Live sessions", icon: Radio, description: "Schedule & host" },
   { href: "/admin/payments", label: "Payments", icon: Wallet, description: "Review receipts" },
+  { href: "/admin/users", label: "Users", icon: Users, description: "Verified emails" },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail, description: "Subscriber emails" },
 ];
 

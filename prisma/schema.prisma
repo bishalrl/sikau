@@ -74,6 +74,7 @@ model User {
   email              String            @unique
   passwordHash       String?
   role               UserRole          @default(LEARNER)
+  authProvider       String            @default("email")
   emailVerifiedAt    DateTime?
   emailOtpHash       String?
   emailOtpExpiresAt  DateTime?

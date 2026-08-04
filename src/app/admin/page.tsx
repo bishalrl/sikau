@@ -24,7 +24,7 @@ export default async function AdminPage() {
   const overview = await getAdminOverview();
 
   const stats: Stat[] = [
-    { label: "Users", value: overview.users, icon: Users, href: "/admin/payments", accent: "admin-stat--blue" },
+    { label: "Users", value: overview.users, icon: Users, href: "/admin/users", accent: "admin-stat--blue" },
     { label: "Courses", value: overview.courses, icon: BookOpen, href: "/admin/courses", accent: "admin-stat--green" },
     { label: "Blog Posts", value: overview.blogs, icon: FileText, href: "/admin/blogs", accent: "admin-stat--violet" },
     { label: "Ebooks", value: overview.ebooks, icon: BookOpen, href: "/admin/ebooks", accent: "admin-stat--amber" },
@@ -55,6 +55,7 @@ export default async function AdminPage() {
     { label: "Build a course", href: "/admin/courses", icon: BookOpen },
     { label: "Schedule live session", href: "/admin/live", icon: Radio },
     { label: "Review payments", href: "/admin/payments", icon: Wallet },
+    { label: "Verified users", href: "/admin/users", icon: Users },
     { label: "Newsletter requests", href: "/admin/newsletter", icon: Mail },
     { label: "Edit website content", href: "/admin/content", icon: ScrollText },
   ];

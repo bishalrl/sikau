@@ -86,6 +86,8 @@ export const authOptions: NextAuthOptions = {
           data: {
             name: user.name ?? existing.name,
             emailVerifiedAt: existing.emailVerifiedAt ?? new Date(),
+            // Keep email accounts as email if they already have a password; otherwise mark Google.
+            authProvider: existing.passwordHash ? existing.authProvider || "email" : "google",
           },
         });
       } else {
@@ -95,6 +97,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name ?? email.split("@")[0],
             passwordHash: null,
             emailVerifiedAt: new Date(),
+            authProvider: "google",
             role: "LEARNER",
           },
         });

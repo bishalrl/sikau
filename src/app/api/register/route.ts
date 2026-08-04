@@ -34,6 +34,7 @@ export async function POST(request: Request) {
             name: parsed.name,
             passwordHash,
             role: parsed.role,
+            authProvider: "email",
           },
           select: { id: true, email: true, role: true },
         })
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
             email,
             passwordHash,
             role: parsed.role,
+            authProvider: "email",
           },
           select: { id: true, email: true, role: true },
         });
