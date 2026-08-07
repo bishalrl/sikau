@@ -30,7 +30,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
     }
 
-    if (!user.emailVerifiedAt) {
+    // Seeded admin uses a non-mailbox address — skip OTP for ADMIN.
+    if (!user.emailVerifiedAt && user.role !== "ADMIN") {
       return NextResponse.json(
         {
           needsVerification: true,
@@ -39,6 +40,17 @@ export async function POST(request: Request) {
         },
         { status: 403 },
       );
+    }
+
+    if (!user.emailVerifiedAt && user.role === "ADMIN") {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerifiedAt: new Date(),
+          emailOtpHash: null,
+          emailOtpExpiresAt: null,
+        },
+      });
     }
 
     return NextResponse.json({ ok: true });

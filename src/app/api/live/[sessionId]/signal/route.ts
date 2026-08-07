@@ -64,7 +64,15 @@ export async function GET(request: Request, { params }: Params) {
 }
 
 const signalSchema = z.object({
-  type: z.enum(["viewer-join", "viewer-leave", "offer", "answer", "ice"]),
+  type: z.enum([
+    "viewer-join",
+    "viewer-leave",
+    "offer",
+    "answer",
+    "ice",
+    "annotate",
+    "annotate-clear",
+  ]),
   toUserId: z.string().optional().nullable(),
   payload: z.record(z.string(), z.any()).default({}),
 });
@@ -108,6 +116,19 @@ export async function POST(request: Request, { params }: Params) {
           toUserId: access.liveSession!.hostId,
           type: "viewer-leave",
           payload: JSON.stringify({ userId: session.user.id }),
+        },
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (body.type === "annotate" || body.type === "annotate-clear") {
+      await prisma.liveSignal.create({
+        data: {
+          sessionId,
+          fromUserId: session.user.id,
+          toUserId: null,
+          type: body.type,
+          payload: JSON.stringify(body.payload),
         },
       });
       return NextResponse.json({ ok: true });

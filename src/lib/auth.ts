@@ -54,8 +54,20 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        if (!user.emailVerifiedAt) {
+        // Seeded admin uses a non-mailbox address — skip OTP for ADMIN.
+        if (!user.emailVerifiedAt && user.role !== "ADMIN") {
           throw new Error("EMAIL_NOT_VERIFIED");
+        }
+
+        if (!user.emailVerifiedAt && user.role === "ADMIN") {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              emailVerifiedAt: new Date(),
+              emailOtpHash: null,
+              emailOtpExpiresAt: null,
+            },
+          });
         }
 
         return {

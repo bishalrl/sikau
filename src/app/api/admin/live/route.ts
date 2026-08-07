@@ -92,6 +92,8 @@ export async function PATCH(request: Request) {
         data: {
           status: LiveSessionStatus.LIVE,
           startedAt: new Date(),
+          // Bind signaling to whoever actually opens the host room.
+          hostId: session.user.id,
         },
       });
 

@@ -17,6 +17,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No account found for this email." }, { status: 404 });
     }
 
+    if (user.role === "ADMIN") {
+      return NextResponse.json(
+        { error: "Admin accounts do not use email OTP. Please log in with your password." },
+        { status: 400 },
+      );
+    }
+
     if (user.emailVerifiedAt) {
       return NextResponse.json({ error: "This email is already verified. Please log in." }, { status: 400 });
     }
