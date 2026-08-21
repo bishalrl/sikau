@@ -10,6 +10,7 @@ type Props = {
 const quickLinks = [
   { label: "Home", href: "/" },
   { label: "NEPSE Ebook", href: "/ebooks" },
+  { label: "Newsletter", href: "/newsletter" },
   { label: "Community", href: "/community" },
   { label: "Blog", href: "/blog" },
 ];
@@ -105,7 +106,11 @@ export function AppFooter({ variant = "dark", description }: Props) {
               Newsletter
             </h2>
             <p className="app-footer__newsletter-text">
-              Stay updated with personal finance tips.
+              Leave your email for tips, or{" "}
+              <Link href="/newsletter" className="underline underline-offset-2">
+                get paid group access
+              </Link>
+              .
             </p>
             <FooterNewsletter variant={variant} />
           </section>

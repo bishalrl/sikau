@@ -3065,6 +3065,23 @@ body {
   border-top: 1px solid rgba(187, 202, 191, 0.45);
 }
 
+.community-chat__composer--readonly {
+  justify-content: center;
+  color: var(--color-on-surface-variant);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.community-chat__readonly {
+  margin: 0 12px 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-on-surface-variant);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
 .community-chat__composer input[type="text"],
 .community-chat__composer input:not([type]) {
   flex: 1;

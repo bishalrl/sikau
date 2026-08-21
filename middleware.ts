@@ -37,6 +37,7 @@ function isAllowed(pathname: string, role?: string) {
     pathname.startsWith("/payment") ||
     pathname.startsWith("/live") ||
     pathname.startsWith("/community") ||
+    pathname.startsWith("/newsletter") ||
     (pathname.includes("/ebooks/") && pathname.endsWith("/read"))
   ) {
     return Boolean(role);
@@ -83,5 +84,7 @@ export const config = {
     "/live/:path*",
     "/community",
     "/community/:path*",
+    "/newsletter",
+    "/newsletter/:path*",
   ],
 };

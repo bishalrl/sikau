@@ -686,13 +686,37 @@ export async function getPendingEbookOrders() {
   }, []);
 }
 
+export async function getPendingNewsletterOrders() {
+  return safeQuery(async () => {
+    await prisma.newsletterOrder.deleteMany({
+      where: {
+        paymentStatus: PaymentStatus.PENDING,
+        OR: [{ receiptPath: null }, { receiptPath: "" }],
+      },
+    });
+
+    return prisma.newsletterOrder.findMany({
+      where: {
+        paymentStatus: PaymentStatus.PENDING,
+        receiptPath: { not: null },
+        NOT: { receiptPath: "" },
+      },
+      include: {
+        product: { select: { id: true, title: true } },
+        user: { select: { id: true, email: true, name: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+  }, []);
+}
+
 export async function userHasDashboardAccess(userId: string, role?: string | null) {
   if (role === "ADMIN" || role === "INSTRUCTOR") {
     return true;
   }
 
   return safeQuery(async () => {
-    const [enrollment, ebookOrder] = await Promise.all([
+    const [enrollment, ebookOrder, newsletterOrder] = await Promise.all([
       prisma.enrollment.findFirst({
         where: { userId, paymentStatus: PaymentStatus.APPROVED },
         select: { id: true },
@@ -701,8 +725,12 @@ export async function userHasDashboardAccess(userId: string, role?: string | nul
         where: { userId, paymentStatus: PaymentStatus.APPROVED },
         select: { id: true },
       }),
+      prisma.newsletterOrder.findFirst({
+        where: { userId, paymentStatus: PaymentStatus.APPROVED },
+        select: { id: true },
+      }),
     ]);
-    return Boolean(enrollment || ebookOrder);
+    return Boolean(enrollment || ebookOrder || newsletterOrder);
   }, false);
 }
 

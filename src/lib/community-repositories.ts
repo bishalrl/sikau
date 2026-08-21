@@ -239,6 +239,11 @@ export async function userHasAnyCommunityMembership(userId: string) {
   });
   if (approvedLinked > 0) return true;
 
+  const approvedNewsletter = await prisma.newsletterOrder.count({
+    where: { userId, paymentStatus: PaymentStatus.APPROVED },
+  });
+  if (approvedNewsletter > 0) return true;
+
   const member = await prisma.communityMember.count({
     where: { userId, bannedAt: null },
   });

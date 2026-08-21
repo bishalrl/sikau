@@ -1,10 +1,15 @@
 import { CombinedPaymentQueue } from "@/components/admin/CombinedPaymentQueue";
-import { getPendingEbookOrders, getPendingPayments } from "@/lib/repositories";
+import {
+  getPendingEbookOrders,
+  getPendingNewsletterOrders,
+  getPendingPayments,
+} from "@/lib/repositories";
 
 export default async function AdminPaymentsPage() {
-  const [coursePayments, ebookOrders] = await Promise.all([
+  const [coursePayments, ebookOrders, newsletterOrders] = await Promise.all([
     getPendingPayments(),
     getPendingEbookOrders(),
+    getPendingNewsletterOrders(),
   ]);
 
   return (
@@ -13,7 +18,11 @@ export default async function AdminPaymentsPage() {
         <p className="text-sm font-semibold uppercase tracking-wide text-primary">Payments</p>
         <h1 className="mt-2 font-display-md text-display-md text-on-background">Receipt Review Queue</h1>
       </div>
-      <CombinedPaymentQueue coursePayments={coursePayments} ebookOrders={ebookOrders} />
+      <CombinedPaymentQueue
+        coursePayments={coursePayments}
+        ebookOrders={ebookOrders}
+        newsletterOrders={newsletterOrders}
+      />
     </section>
   );
 }

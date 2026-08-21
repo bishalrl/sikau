@@ -32,7 +32,7 @@ const links: NavLink[] = [
   { href: "/admin/live", label: "Live sessions", icon: Radio, description: "Schedule & host" },
   { href: "/admin/payments", label: "Payments", icon: Wallet, description: "Review receipts" },
   { href: "/admin/users", label: "Users", icon: Users, description: "Verified emails" },
-  { href: "/admin/newsletter", label: "Newsletter", icon: Mail, description: "Subscriber emails" },
+  { href: "/admin/newsletter", label: "Newsletter", icon: Mail, description: "Paid group & posts" },
 ];
 
 function isActive(pathname: string, href: string) {

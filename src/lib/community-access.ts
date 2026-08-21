@@ -6,6 +6,12 @@ import {
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
+export const NEWSLETTER_COMMUNITY_PERMISSIONS = JSON.stringify({
+  text: "ADMIN",
+  media: "ADMIN",
+  voice: "ADMIN",
+});
+
 export class CommunityAccessError extends Error {
   status: number;
 
@@ -45,6 +51,15 @@ function canUse(level: "ALL" | "MODS" | "ADMIN", role: CommunityMemberRole) {
   if (level === "ALL") return true;
   if (level === "MODS") return roleRank(role) >= 2;
   return roleRank(role) >= 3;
+}
+
+export function memberCanSend(
+  role: CommunityMemberRole,
+  permissionsRaw: string | null | undefined,
+  kind: "text" | "media" | "voice" = "text",
+) {
+  const permissions = parseCommunityPermissions(permissionsRaw);
+  return canUse(permissions[kind], role);
 }
 
 /** Upsert membership for every community linked to an approved ebook order. */
@@ -106,15 +121,64 @@ export async function ensureCommunityMembershipsForEbookOrder(orderId: string) {
   return members;
 }
 
-/** Backfill memberships from any approved community-linked ebook purchases. */
-export async function syncUserCommunityMemberships(userId: string) {
-  const approvedOrders = await prisma.ebookOrder.findMany({
-    where: { userId, paymentStatus: PaymentStatus.APPROVED },
-    select: { id: true },
+/** Grant read-only membership for an approved newsletter order. */
+export async function ensureCommunityMembershipForNewsletterOrder(orderId: string) {
+  const order = await prisma.newsletterOrder.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      userId: true,
+      paymentStatus: true,
+      product: { select: { communityId: true } },
+    },
   });
 
-  for (const order of approvedOrders) {
+  if (!order || order.paymentStatus !== PaymentStatus.APPROVED) {
+    return null;
+  }
+
+  const communityId = order.product.communityId;
+  const existing = await prisma.communityMember.findUnique({
+    where: {
+      communityId_userId: { communityId, userId: order.userId },
+    },
+  });
+
+  if (existing?.bannedAt) {
+    return existing;
+  }
+
+  return prisma.communityMember.upsert({
+    where: {
+      communityId_userId: { communityId, userId: order.userId },
+    },
+    update: {},
+    create: {
+      communityId,
+      userId: order.userId,
+      role: CommunityMemberRole.MEMBER,
+    },
+  });
+}
+
+/** Backfill memberships from approved ebook + newsletter purchases. */
+export async function syncUserCommunityMemberships(userId: string) {
+  const [ebookOrders, newsletterOrders] = await Promise.all([
+    prisma.ebookOrder.findMany({
+      where: { userId, paymentStatus: PaymentStatus.APPROVED },
+      select: { id: true },
+    }),
+    prisma.newsletterOrder.findMany({
+      where: { userId, paymentStatus: PaymentStatus.APPROVED },
+      select: { id: true },
+    }),
+  ]);
+
+  for (const order of ebookOrders) {
     await ensureCommunityMembershipsForEbookOrder(order.id);
+  }
+  for (const order of newsletterOrders) {
+    await ensureCommunityMembershipForNewsletterOrder(order.id);
   }
 }
 
@@ -122,7 +186,11 @@ export async function assertCommunityMember(
   userId: string,
   communityId: string,
   options?: { allowBanned?: boolean },
-): Promise<CommunityMember & { community: { permissions: string; status: CommunityStatus; slug: string; name: string } }> {
+): Promise<
+  CommunityMember & {
+    community: { permissions: string; status: CommunityStatus; slug: string; name: string };
+  }
+> {
   const member = await prisma.communityMember.findUnique({
     where: {
       communityId_userId: { communityId, userId },

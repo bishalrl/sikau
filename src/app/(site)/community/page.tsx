@@ -16,12 +16,17 @@ export default async function CommunityPage() {
           <p className="text-sm font-semibold uppercase tracking-wide text-primary">Community</p>
           <h1 className="mt-2 font-display-md text-display-md text-on-background">Your groups</h1>
           <p className="mt-2 text-sm text-on-surface-variant">
-            Chat with fellow traders in communities unlocked by your package.
+            Groups unlocked by your ebook package or paid newsletter.
           </p>
         </div>
-        <Link href="/ebooks#packages" className="text-sm font-semibold text-primary">
-          Browse packages
-        </Link>
+        <div className="flex flex-wrap gap-4">
+          <Link href="/newsletter" className="text-sm font-semibold text-primary">
+            Paid newsletter
+          </Link>
+          <Link href="/ebooks#packages" className="text-sm font-semibold text-primary">
+            Browse packages
+          </Link>
+        </div>
       </div>
       <CommunityList />
     </div>

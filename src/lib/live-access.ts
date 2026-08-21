@@ -7,7 +7,7 @@ export async function userHasLearnerAccess(userId: string, role?: string | null)
     return true;
   }
 
-  const [enrollment, ebookOrder] = await Promise.all([
+  const [enrollment, ebookOrder, newsletterOrder] = await Promise.all([
     prisma.enrollment.findFirst({
       where: { userId, paymentStatus: PaymentStatus.APPROVED },
       select: { id: true },
@@ -16,9 +16,13 @@ export async function userHasLearnerAccess(userId: string, role?: string | null)
       where: { userId, paymentStatus: PaymentStatus.APPROVED },
       select: { id: true },
     }),
+    prisma.newsletterOrder.findFirst({
+      where: { userId, paymentStatus: PaymentStatus.APPROVED },
+      select: { id: true },
+    }),
   ]);
 
-  return Boolean(enrollment || ebookOrder);
+  return Boolean(enrollment || ebookOrder || newsletterOrder);
 }
 
 export function canJoinLiveByTime(scheduledAt: Date, now = new Date()) {

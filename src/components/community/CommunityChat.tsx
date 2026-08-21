@@ -40,6 +40,9 @@ type Props = {
   };
   currentUserId: string;
   announcements: { id: string; title: string; body: string }[];
+  canSend?: boolean;
+  canModerate?: boolean;
+  readOnlyLabel?: string;
 };
 
 function dayKey(value: string) {
@@ -60,7 +63,14 @@ function formatTime(value: string) {
   return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-export function CommunityChat({ community, currentUserId, announcements }: Props) {
+export function CommunityChat({
+  community,
+  currentUserId,
+  announcements,
+  canSend = true,
+  canModerate = false,
+  readOnlyLabel = "Updates only — you can read messages but not post.",
+}: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pinned, setPinned] = useState<ChatMessage[]>([]);
   const [body, setBody] = useState("");
@@ -126,21 +136,34 @@ export function CommunityChat({ community, currentUserId, announcements }: Props
   async function loadOlder() {
     if (!messages[0] || loadingOlder || !hasMore) return;
     setLoadingOlder(true);
+    setError("");
     const previousHeight = listRef.current?.scrollHeight ?? 0;
-    const response = await fetch(
-      `/api/community/${community.id}/messages?before=${messages[0].id}&limit=40`,
-    );
-    const data = await response.json();
-    setLoadingOlder(false);
-    if (!response.ok) return;
-    const older = data.messages ?? [];
-    setHasMore(older.length >= 40);
-    mergeMessages(older, "prepend");
-    requestAnimationFrame(() => {
-      if (listRef.current) {
-        listRef.current.scrollTop = listRef.current.scrollHeight - previousHeight;
+    const previousTop = listRef.current?.scrollTop ?? 0;
+    try {
+      const response = await fetch(
+        `/api/community/${community.id}/messages?before=${messages[0].id}&limit=40`,
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error ?? "Unable to load older messages.");
+        return;
       }
-    });
+      const older = (data.messages ?? []) as ChatMessage[];
+      setHasMore(older.length >= 40);
+      if (older.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      mergeMessages(older, "prepend");
+      requestAnimationFrame(() => {
+        if (listRef.current) {
+          const nextHeight = listRef.current.scrollHeight;
+          listRef.current.scrollTop = previousTop + (nextHeight - previousHeight);
+        }
+      });
+    } finally {
+      setLoadingOlder(false);
+    }
   }
 
   async function uploadAndSend(file: File) {
@@ -308,16 +331,22 @@ export function CommunityChat({ community, currentUserId, announcements }: Props
         </div>
       )}
 
+      {!canSend && (
+        <div className="community-chat__readonly" role="status">
+          {readOnlyLabel}
+        </div>
+      )}
+
       <div ref={listRef} className="community-chat__messages">
         {hasMore && (
-          <button type="button" className="community-chat__load-older" onClick={loadOlder} disabled={loadingOlder}>
+          <button type="button" className="community-chat__load-older" onClick={() => void loadOlder()} disabled={loadingOlder}>
             {loadingOlder ? "Loading…" : "Load earlier messages"}
           </button>
         )}
 
         {timeline.map((row) =>
           row.kind === "day" ? (
-            <div key={row.label} className="community-chat__day">
+            <div key={`day-${row.label}`} className="community-chat__day">
               {row.label}
             </div>
           ) : (
@@ -364,41 +393,57 @@ export function CommunityChat({ community, currentUserId, announcements }: Props
                       acc[reaction.emoji] = (acc[reaction.emoji] ?? 0) + 1;
                       return acc;
                     }, {}),
-                  ).map(([emoji, count]) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => runAction(row.message.id, "react", emoji)}
-                    >
-                      {emoji} {count}
-                    </button>
-                  ))}
+                  ).map(([emoji, count]) =>
+                    canSend ? (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => runAction(row.message.id, "react", emoji)}
+                      >
+                        {emoji} {count}
+                      </button>
+                    ) : (
+                      <span key={emoji}>
+                        {emoji} {count}
+                      </span>
+                    ),
+                  )}
                 </div>
               )}
-              <div className="community-bubble__actions">
-                <button type="button" onClick={() => setReplyTo(row.message)}>
-                  Reply
-                </button>
-                <button type="button" onClick={() => runAction(row.message.id, "react", "👍")}>
-                  👍
-                </button>
-                <button type="button" onClick={() => runAction(row.message.id, "react", "🔥")}>
-                  🔥
-                </button>
-                <button type="button" onClick={() => runAction(row.message.id, "pin")}>
-                  Pin
-                </button>
-                <button type="button" onClick={() => runAction(row.message.id, "delete")}>
-                  Delete
-                </button>
-              </div>
+              {(canSend || canModerate) && (
+                <div className="community-bubble__actions">
+                  {canSend && (
+                    <>
+                      <button type="button" onClick={() => setReplyTo(row.message)}>
+                        Reply
+                      </button>
+                      <button type="button" onClick={() => runAction(row.message.id, "react", "👍")}>
+                        👍
+                      </button>
+                      <button type="button" onClick={() => runAction(row.message.id, "react", "🔥")}>
+                        🔥
+                      </button>
+                    </>
+                  )}
+                  {canModerate && (
+                    <>
+                      <button type="button" onClick={() => runAction(row.message.id, "pin")}>
+                        Pin
+                      </button>
+                      <button type="button" onClick={() => runAction(row.message.id, "delete")}>
+                        Delete
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </article>
           ),
         )}
         <div ref={bottomRef} />
       </div>
 
-      {replyTo && (
+      {canSend && replyTo && (
         <div className="community-chat__replying">
           <div>
             <strong>Replying to {replyTo.author.name ?? "Member"}</strong>
@@ -410,30 +455,36 @@ export function CommunityChat({ community, currentUserId, announcements }: Props
         </div>
       )}
 
-      <form className="community-chat__composer" onSubmit={sendText}>
-        <label className="community-chat__attach">
-          +
+      {canSend ? (
+        <form className="community-chat__composer" onSubmit={sendText}>
+          <label className="community-chat__attach">
+            +
+            <input
+              type="file"
+              hidden
+              accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadAndSend(file);
+                e.target.value = "";
+              }}
+            />
+          </label>
           <input
-            type="file"
-            hidden
-            accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) uploadAndSend(file);
-              e.target.value = "";
-            }}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Type a message"
+            disabled={sending}
           />
-        </label>
-        <input
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Type a message"
-          disabled={sending}
-        />
-        <Button type="submit" disabled={sending || !body.trim()}>
-          Send
-        </Button>
-      </form>
+          <Button type="submit" disabled={sending || !body.trim()}>
+            Send
+          </Button>
+        </form>
+      ) : (
+        <div className="community-chat__composer community-chat__composer--readonly">
+          <p>Read-only feed</p>
+        </div>
+      )}
       {error && <p className="community-chat__error">{error}</p>}
     </div>
   );

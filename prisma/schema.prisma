@@ -96,6 +96,8 @@ model User {
   communityMessages  CommunityMessage[] @relation("CommunityMessageAuthor")
   communityReactions CommunityReaction[]
   communityAnnouncements CommunityAnnouncement[] @relation("CommunityAnnouncementAuthor")
+  newsletterOrders   NewsletterOrder[]
+  newsletterOrdersReviewed NewsletterOrder[] @relation("NewsletterOrderReviewer")
 }
 
 model WebsiteContent {
@@ -344,6 +346,43 @@ model NewsletterSubscriber {
   @@index([createdAt])
 }
 
+/// Singleton-style paid newsletter product (one active product expected).
+model NewsletterProduct {
+  id                  String   @id @default(cuid())
+  title               String
+  description         String   @default("")
+  priceNpr            Int      @default(0)
+  paymentQrPath       String?
+  paymentInstructions String?
+  isActive            Boolean  @default(true)
+  communityId         String   @unique
+  community           Community @relation(fields: [communityId], references: [id], onDelete: Restrict)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  orders              NewsletterOrder[]
+}
+
+model NewsletterOrder {
+  id            String          @id @default(cuid())
+  userId        String
+  productId     String
+  amount        Int             @default(0)
+  currency      String          @default("NPR")
+  paymentStatus PaymentStatus   @default(PENDING)
+  receiptPath   String?
+  notes         String?
+  reviewedById  String?
+  reviewedAt    DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product       NewsletterProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  reviewedBy    User?           @relation("NewsletterOrderReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, productId])
+  @@index([paymentStatus, createdAt])
+}
+
 model Community {
   id          String          @id @default(cuid())
   slug        String          @unique
@@ -359,6 +398,7 @@ model Community {
   members     CommunityMember[]
   messages    CommunityMessage[]
   announcements CommunityAnnouncement[]
+  newsletterProduct NewsletterProduct?
 
   @@index([status, updatedAt])
 }

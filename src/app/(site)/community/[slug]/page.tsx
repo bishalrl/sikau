@@ -1,7 +1,11 @@
 import { CommunityStatus } from "@prisma/client";
 import { notFound, redirect } from "next/navigation";
 import { CommunityChat } from "@/components/community/CommunityChat";
-import { assertCommunityMember, CommunityAccessError } from "@/lib/community-access";
+import {
+  assertCommunityMember,
+  CommunityAccessError,
+  memberCanSend,
+} from "@/lib/community-access";
 import { getCommunityBySlug } from "@/lib/community-repositories";
 import { getCurrentSession } from "@/lib/session";
 
@@ -22,14 +26,18 @@ export default async function CommunityChatPage({
     notFound();
   }
 
+  let member;
   try {
-    await assertCommunityMember(session.user.id, community.id);
+    member = await assertCommunityMember(session.user.id, community.id);
   } catch (error) {
     if (error instanceof CommunityAccessError) {
       redirect("/community");
     }
     throw error;
   }
+
+  const canSend = memberCanSend(member.role, member.community.permissions, "text");
+  const canModerate = member.role === "ADMIN" || member.role === "MODERATOR";
 
   return (
     <div className="community-chat-page">
@@ -47,6 +55,8 @@ export default async function CommunityChatPage({
           title: item.title,
           body: item.body,
         }))}
+        canSend={canSend}
+        canModerate={canModerate}
       />
     </div>
   );

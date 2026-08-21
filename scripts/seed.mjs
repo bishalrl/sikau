@@ -484,6 +484,71 @@ You also get:
       },
     });
   }
+
+  const newsletterPermissions = JSON.stringify({
+    text: "ADMIN",
+    media: "ADMIN",
+    voice: "ADMIN",
+  });
+
+  const newsletterCommunity = await prisma.community.upsert({
+    where: { slug: "newsletter-updates" },
+    update: {
+      name: "Newsletter Updates",
+      description: "Paid newsletter updates — members can read only.",
+      permissions: newsletterPermissions,
+      status: "ACTIVE",
+    },
+    create: {
+      slug: "newsletter-updates",
+      name: "Newsletter Updates",
+      description: "Paid newsletter updates — members can read only.",
+      permissions: newsletterPermissions,
+      status: "ACTIVE",
+    },
+  });
+
+  await prisma.communityMember.upsert({
+    where: {
+      communityId_userId: {
+        communityId: newsletterCommunity.id,
+        userId: admin.id,
+      },
+    },
+    update: { role: "ADMIN", bannedAt: null },
+    create: {
+      communityId: newsletterCommunity.id,
+      userId: admin.id,
+      role: "ADMIN",
+    },
+  });
+
+  const existingProduct = await prisma.newsletterProduct.findFirst({
+    where: { communityId: newsletterCommunity.id },
+  });
+
+  if (!existingProduct) {
+    await prisma.newsletterProduct.create({
+      data: {
+        title: "Sikau Paisa Newsletter",
+        description:
+          "Get market and money updates in a private community feed. Pay once, then read every incoming update.",
+        priceNpr: 999,
+        paymentInstructions: "Scan the QR, pay, then upload your receipt for unlock.",
+        isActive: true,
+        communityId: newsletterCommunity.id,
+      },
+    });
+  } else {
+    await prisma.newsletterProduct.update({
+      where: { id: existingProduct.id },
+      data: {
+        isActive: true,
+      },
+    });
+  }
+
+  console.log("Seeded newsletter product + read-only community:", newsletterCommunity.slug);
 }
 
 main()
