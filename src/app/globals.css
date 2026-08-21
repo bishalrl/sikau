@@ -81,6 +81,82 @@ body {
 .text-display-md { font-size: 36px; line-height: 44px; }
 .text-display-lg { font-size: 48px; line-height: 56px; }
 
+/* Mobile-first type & spacing — stop oversized desktop tokens crushing phones */
+@media (max-width: 767px) {
+  .font-display-md,
+  .text-display-md {
+    font-size: clamp(1.5rem, 6vw, 1.85rem);
+    line-height: 1.2;
+  }
+
+  .font-display-lg,
+  .text-display-lg {
+    font-size: clamp(1.75rem, 7vw, 2.15rem);
+    line-height: 1.15;
+  }
+
+  .font-headline-lg,
+  .text-headline-lg {
+    font-size: 1.35rem;
+    line-height: 1.3;
+  }
+
+  .font-headline-md,
+  .text-headline-md {
+    font-size: 1.2rem;
+    line-height: 1.35;
+  }
+
+  .py-xl {
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .px-xl,
+  .p-xl {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .p-xl {
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .gap-xl {
+    gap: 1.5rem;
+  }
+
+  .gap-lg {
+    gap: 1rem;
+  }
+
+  .site-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* Room for fixed mobile bottom nav + iOS home indicator */
+.has-mobile-bottom-nav {
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .has-mobile-bottom-nav {
+    padding-bottom: 0;
+  }
+}
+
+.mobile-bottom-nav {
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.mobile-bottom-nav a {
+  min-width: 56px;
+  min-height: 48px;
+}
+
 /* Stable layout container — avoids Tailwind spacing-token collision */
 .site-container {
   width: 100%;
@@ -984,16 +1060,38 @@ body {
   background:
     radial-gradient(circle at top right, rgba(16, 185, 129, 0.2), transparent 40%),
     #0f1f18;
-  min-height: 420px;
+  min-height: min(420px, 56vw);
 }
 
 .live-room__video {
   width: 100%;
-  min-height: 420px;
+  min-height: min(420px, 56vw);
   max-height: 70vh;
   object-fit: contain;
   background: #0f1f18;
   display: block;
+}
+
+@media (max-width: 640px) {
+  .live-room__stage,
+  .live-room__video {
+    min-height: 240px;
+    border-radius: 16px;
+  }
+
+  .live-room__header {
+    gap: 12px;
+  }
+
+  .live-room__actions {
+    width: 100%;
+  }
+
+  .live-room__pip {
+    width: min(132px, 34%);
+    right: 10px;
+    bottom: 10px;
+  }
 }
 
 .live-room__stage.is-presenting .live-room__video {
@@ -2123,11 +2221,83 @@ body {
   backdrop-filter: blur(14px);
 }
 
+.admin-sidebar__mobile-toggle {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .admin-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    padding: 12px 14px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(187, 202, 191, 0.4);
+    gap: 10px;
+  }
+
+  .admin-sidebar__brand {
+    display: none;
+  }
+
+  .admin-sidebar__brand-tag,
+  .admin-nav-link__desc {
+    display: none;
+  }
+
+  .admin-sidebar__mobile-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    border: 1px solid rgba(187, 202, 191, 0.55);
+    border-radius: 12px;
+    background: #fff;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-on-background);
+    cursor: pointer;
+  }
+
+  .admin-sidebar:not(.is-open) .admin-sidebar__nav,
+  .admin-sidebar:not(.is-open) .admin-sidebar__logout {
+    display: none;
+  }
+
+  .admin-sidebar.is-open .admin-sidebar__nav {
+    display: flex;
+    max-height: min(70vh, 520px);
+    overflow-y: auto;
+  }
+
+  .admin-topbar {
+    padding: 14px 16px;
+  }
+
+  .admin-topbar__title {
+    font-size: 1.05rem;
+  }
+
+  .admin-topbar__user-meta {
+    display: none;
+  }
+
+  .admin-shell__content {
+    padding: 16px;
+  }
+}
+
 @media (min-width: 1024px) {
   .admin-sidebar {
     position: sticky;
     top: 0;
     height: 100vh;
+  }
+
+  .admin-sidebar__mobile-toggle {
+    display: none !important;
   }
 }
 
@@ -3114,10 +3284,13 @@ body {
 @media (max-width: 640px) {
   .community-chat-page {
     padding: 0;
+    margin: 0 -16px;
   }
 
   .community-chat {
-    height: calc(100dvh - 64px);
+    /* SiteHeader (~64px) + safe area — fill remaining viewport only */
+    height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - 64px - env(safe-area-inset-bottom, 0px));
     border-radius: 0;
     border-left: 0;
     border-right: 0;
@@ -3126,6 +3299,16 @@ body {
   .community-bubble__actions {
     display: flex;
     flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .community-bubble__actions button {
+    min-height: 36px;
+    padding: 6px 12px;
+  }
+
+  .community-chat__composer {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
 }
 

@@ -12,17 +12,17 @@ export function FinalCtaSection() {
         </p>
         <div className="reveal active mt-lg flex flex-col justify-center gap-md delay-200 sm:flex-row">
           <Link
-            href="/ebooks"
+            href="/newsletter"
             className="rounded-xl bg-white px-xl py-md font-bold text-primary shadow-2xl transition-transform hover:scale-105"
+          >
+            Subscribe to Newsletter
+          </Link>
+          <Link
+            href="/ebooks"
+            className="rounded-xl border border-white px-xl py-md font-bold text-white transition-all hover:bg-white/10"
           >
             Get the NEPSE Ebook
           </Link>
-          <button
-            type="button"
-            className="rounded-xl border border-white px-xl py-md font-bold text-white transition-all hover:bg-white/10"
-          >
-            Get Free Resources
-          </button>
         </div>
       </div>
     </section>

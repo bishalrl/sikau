@@ -16,6 +16,7 @@ const quickLinks = [
 ];
 
 const resourceLinks = [
+  { label: "Subscribe newsletter", href: "/newsletter" },
   { label: "Start reading", href: "/ebooks" },
   { label: "Blog", href: "/blog" },
   { label: "Login", href: "/login" },
@@ -105,13 +106,6 @@ export function AppFooter({ variant = "dark", description }: Props) {
             <h2 className="app-footer__heading" id="footer-newsletter">
               Newsletter
             </h2>
-            <p className="app-footer__newsletter-text">
-              Leave your email for tips, or{" "}
-              <Link href="/newsletter" className="underline underline-offset-2">
-                get paid group access
-              </Link>
-              .
-            </p>
             <FooterNewsletter variant={variant} />
           </section>
         </div>

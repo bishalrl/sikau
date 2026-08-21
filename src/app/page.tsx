@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CurriculumAccordion } from "@/components/landing/CurriculumAccordion";
 import { CurriculumGrid } from "@/components/landing/CurriculumGrid";
 import { FinalCtaSection } from "@/components/landing/FinalCtaSection";
+import { HomepageNewsletterSection } from "@/components/landing/HomepageNewsletterSection";
 import { HomepageLiveSessions } from "@/components/landing/HomepageLiveSessions";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingHeader } from "@/components/landing/LandingHeader";
@@ -50,10 +51,10 @@ export default async function HomePage() {
     }));
 
   return (
-    <>
+    <div className="has-mobile-bottom-nav">
       <ScrollReveal />
       <LandingHeader />
-      <main className="overflow-x-hidden pb-20 md:pb-0">
+      <main className="overflow-x-hidden">
         <LandingHero
           badge={content["home.hero.badge"]?.markdown}
           title={content["home.hero.title"]?.markdown}
@@ -62,6 +63,7 @@ export default async function HomePage() {
         <TrustMarquee />
         <MeetRajuSection />
         <MasterclassSection />
+        <HomepageNewsletterSection />
         <HomepageLiveSessions sessions={sessions} isLoggedIn={Boolean(session?.user)} />
         <CurriculumGrid />
         <TransformationSection />
@@ -70,8 +72,8 @@ export default async function HomePage() {
         <FinalCtaSection />
       </main>
       <LandingFooter />
-      <MobileBottomNav />
-    </>
+      <MobileBottomNav isLoggedIn={Boolean(session?.user)} />
+    </div>
   );
 }
 

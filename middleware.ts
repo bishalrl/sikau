@@ -37,7 +37,7 @@ function isAllowed(pathname: string, role?: string) {
     pathname.startsWith("/payment") ||
     pathname.startsWith("/live") ||
     pathname.startsWith("/community") ||
-    pathname.startsWith("/newsletter") ||
+    pathname.startsWith("/newsletter/pay") ||
     (pathname.includes("/ebooks/") && pathname.endsWith("/read"))
   ) {
     return Boolean(role);

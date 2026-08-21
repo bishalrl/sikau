@@ -27,6 +27,7 @@ export function GuestBottomNav({ isLoggedIn = false }: Props) {
   const links = [
     { href: "/", icon: "home", label: "Home" },
     { href: "/ebooks", icon: "menu_book", label: "Ebook" },
+    { href: "/newsletter", icon: "mail", label: "News" },
     { href: "/community", icon: "groups", label: "Community" },
     isLoggedIn
       ? { href: "/ebooks#packages", icon: "shopping_bag", label: "Buy" }
@@ -35,7 +36,7 @@ export function GuestBottomNav({ isLoggedIn = false }: Props) {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 z-[60] flex w-full items-center justify-around border-t border-outline-variant/40 bg-surface/95 px-4 py-2.5 shadow-[0_-4px_20px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:hidden"
+      className="mobile-bottom-nav fixed bottom-0 left-0 z-[60] flex w-full items-center justify-around border-t border-outline-variant/40 bg-surface/95 px-2 pt-2 shadow-[0_-4px_20px_rgba(15,23,42,0.08)] backdrop-blur-xl md:hidden"
       aria-label="Main navigation"
     >
       {links.map((link) => {
@@ -50,7 +51,7 @@ export function GuestBottomNav({ isLoggedIn = false }: Props) {
           <Link
             key={link.label}
             href={link.href}
-            className={`flex min-w-[64px] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg px-3 py-1.5 ${
+            className={`flex cursor-pointer flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1 ${
               active ? "text-primary" : "text-on-surface-variant"
             }`}
           >

@@ -1,27 +1,51 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MaterialIcon } from "./MaterialIcon";
 
-const links = [
-  { href: "/", icon: "home", label: "Home", active: true },
-  { href: "/ebooks", icon: "menu_book", label: "Ebook" },
-  { href: "/blog", icon: "article", label: "Blog" },
-  { href: "/login", icon: "person", label: "Login" },
-];
+type Props = {
+  isLoggedIn?: boolean;
+};
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ isLoggedIn = false }: Props) {
+  const pathname = usePathname();
+
+  const links = [
+    { href: "/", icon: "home", label: "Home" },
+    { href: "/ebooks", icon: "menu_book", label: "Ebook" },
+    { href: "/newsletter", icon: "mail", label: "News" },
+    { href: "/community", icon: "groups", label: "Community" },
+    isLoggedIn
+      ? { href: "/ebooks#packages", icon: "shopping_bag", label: "Buy" }
+      : { href: "/login", icon: "person", label: "Login" },
+  ];
+
   return (
-    <nav className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-xl border-t border-white/20 bg-surface/80 px-margin-mobile py-sm shadow-[0px_-4px_20px_rgba(15,23,42,0.05)] backdrop-blur-2xl md:hidden">
-      {links.map((link) => (
-        <a
-          key={link.label}
-          href={link.href}
-          className={`flex flex-col items-center gap-1 ${
-            link.active ? "text-primary" : "text-on-surface-variant"
-          }`}
-        >
-          <MaterialIcon name={link.icon} filled={Boolean(link.active)} />
-          <span className="font-label-sm text-[10px]">{link.label}</span>
-        </a>
-      ))}
+    <nav
+      className="mobile-bottom-nav fixed bottom-0 left-0 z-[60] flex w-full items-center justify-around border-t border-white/20 bg-surface/95 px-2 pt-2 shadow-[0px_-4px_20px_rgba(15,23,42,0.08)] backdrop-blur-2xl md:hidden"
+      aria-label="Mobile navigation"
+    >
+      {links.map((link) => {
+        const active =
+          link.href === "/"
+            ? pathname === "/"
+            : link.href.startsWith("/ebooks")
+              ? pathname === "/ebooks" || pathname.startsWith("/ebooks/")
+              : pathname === link.href || pathname.startsWith(`${link.href}/`);
+        return (
+          <Link
+            key={link.label}
+            href={link.href}
+            className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1 ${
+              active ? "text-primary" : "text-on-surface-variant"
+            }`}
+          >
+            <MaterialIcon name={link.icon} filled={Boolean(active)} />
+            <span className="font-label-sm text-[10px]">{link.label}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

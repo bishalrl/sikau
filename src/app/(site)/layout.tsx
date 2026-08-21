@@ -7,11 +7,11 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const session = await getCurrentSession();
 
   return (
-    <>
+    <div className="has-mobile-bottom-nav flex min-h-screen flex-col">
       <SiteHeader />
-      <main className="flex-1 pb-20 sm:pb-0">{children}</main>
+      <main className="flex-1">{children}</main>
       <SiteFooter />
       <GuestBottomNav isLoggedIn={Boolean(session?.user)} />
-    </>
+    </div>
   );
 }

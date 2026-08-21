@@ -48,7 +48,7 @@ export function NewsletterBuyButton({ paymentStatus, communitySlug }: Props) {
   return (
     <div className="space-y-2">
       <Button type="button" size="lg" onClick={handleBuy} disabled={loading}>
-        {loading ? "Please wait…" : "Get access"}
+        {loading ? "Please wait…" : "Subscribe — pay & upload receipt"}
       </Button>
       {error && <p className="text-sm text-error">{error}</p>}
     </div>

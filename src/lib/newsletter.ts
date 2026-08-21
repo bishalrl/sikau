@@ -75,11 +75,17 @@ export async function ensureNewsletterProduct(adminUserId?: string) {
 }
 
 export async function getActiveNewsletterProduct() {
-  return prisma.newsletterProduct.findFirst({
+  let product = await prisma.newsletterProduct.findFirst({
     where: { isActive: true },
     include: { community: true },
     orderBy: { createdAt: "asc" },
   });
+
+  if (!product) {
+    product = await ensureNewsletterProduct();
+  }
+
+  return product;
 }
 
 export async function getNewsletterProductForUser(userId: string) {

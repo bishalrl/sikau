@@ -3,13 +3,13 @@ import Link from "next/link";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { getCurrentSession } from "@/lib/session";
 import { SITE_ASSETS } from "@/lib/site-assets";
-import { MaterialIcon } from "./MaterialIcon";
 
 const PROFILE_IMAGE = SITE_ASSETS.logo;
 
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/ebooks", label: "Ebook" },
+  { href: "/newsletter", label: "Newsletter" },
   { href: "/community", label: "Community" },
   { href: "/blog", label: "Blog" },
 ];
@@ -20,13 +20,16 @@ export async function LandingHeader() {
   const isInstructor = session?.user.role === "INSTRUCTOR";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/20 bg-surface/80 shadow-sm backdrop-blur-xl">
-      <nav className="site-container flex items-center justify-between gap-6 py-4 md:py-5">
-        <Link href="/" className="shrink-0 font-headline-lg text-headline-lg font-bold tracking-tight text-primary">
+    <header className="sticky top-0 z-[60] w-full border-b border-white/20 bg-surface/95 shadow-sm backdrop-blur-xl">
+      <nav className="site-container flex items-center justify-between gap-3 py-3 md:gap-6 md:py-5">
+        <Link
+          href="/"
+          className="shrink-0 text-lg font-bold tracking-tight text-primary md:font-headline-lg md:text-headline-lg"
+        >
           Sikau Paisa
         </Link>
 
-        <div className="hidden items-center gap-10 md:flex">
+        <div className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.label}
@@ -38,45 +41,31 @@ export async function LandingHeader() {
           ))}
         </div>
 
-        <div className="flex shrink-0 items-center gap-3 pr-1 md:gap-4 md:pr-2">
-          <button
-            type="button"
-            className="hidden rounded-lg p-2.5 text-primary transition-all hover:bg-primary-container/15 sm:block"
-            aria-label="Notifications"
-          >
-            <MaterialIcon name="notifications" />
-          </button>
-          <button
-            type="button"
-            className="hidden rounded-lg p-2.5 text-primary transition-all hover:bg-primary-container/15 sm:block"
-            aria-label="Premium"
-          >
-            <MaterialIcon name="workspace_premium" />
-          </button>
+        <div className="flex shrink-0 items-center gap-2 md:gap-3">
           {session?.user ? (
             <>
               {(isAdmin || isInstructor) && (
                 <Link
                   href={isAdmin ? "/admin" : "/instructor"}
-                  className="hidden rounded-xl border border-outline-variant/40 px-5 py-2.5 text-sm font-semibold text-on-background md:inline-flex"
+                  className="rounded-xl border border-outline-variant/40 px-3 py-2 text-sm font-semibold text-on-background md:px-5 md:py-2.5"
                 >
-                  {isAdmin ? "Admin Panel" : "Instructor"}
+                  {isAdmin ? "Admin" : "Instructor"}
                 </Link>
               )}
-              <LogoutButton className="emerald-gradient hidden rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(16,185,129,0.25)] transition-all hover:-translate-y-0.5 md:inline-flex" />
+              <LogoutButton className="emerald-gradient rounded-xl px-3 py-2 text-sm font-semibold text-white md:px-5 md:py-2.5" />
             </>
           ) : (
             <Link
               href="/login"
-              className="emerald-gradient hidden rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(16,185,129,0.25)] transition-all hover:-translate-y-0.5 md:inline-flex"
+              className="emerald-gradient rounded-xl px-3 py-2 text-sm font-semibold text-white shadow-[0_4px_16px_rgba(16,185,129,0.25)] md:px-5 md:py-2.5"
             >
-              Login / Sign Up
+              Login
             </Link>
           )}
-          <div className="ml-1 h-10 w-10 overflow-hidden rounded-full border-2 border-primary/25 bg-secondary-container ring-2 ring-white">
+          <div className="hidden h-10 w-10 overflow-hidden rounded-full border-2 border-primary/25 bg-secondary-container ring-2 ring-white sm:block">
             <Image
               src={PROFILE_IMAGE}
-              alt="User Profile"
+              alt=""
               width={40}
               height={40}
               className="h-full w-full object-cover"
