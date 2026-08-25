@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import {
+  ProtectedPdfAttachment,
+  isPdfAttachment,
+  newsletterPdfViewUrl,
+} from "@/components/community/ProtectedPdfAttachment";
 
 type Attachment = {
   id: string;
@@ -43,6 +48,8 @@ type Props = {
   canSend?: boolean;
   canModerate?: boolean;
   readOnlyLabel?: string;
+  /** Newsletter group: PDFs open in-app only, no download link. */
+  protectPdfs?: boolean;
 };
 
 function dayKey(value: string) {
@@ -70,6 +77,7 @@ export function CommunityChat({
   canSend = true,
   canModerate = false,
   readOnlyLabel = "Updates only — you can read messages but not post.",
+  protectPdfs = false,
 }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pinned, setPinned] = useState<ChatMessage[]>([]);
@@ -374,6 +382,11 @@ export function CommunityChat({
                     <video src={file.path} controls preload="metadata" />
                   ) : file.mime.startsWith("audio/") ? (
                     <audio src={file.path} controls preload="metadata" />
+                  ) : protectPdfs && isPdfAttachment(file.mime, file.name) ? (
+                    <ProtectedPdfAttachment
+                      title={file.name}
+                      fileHref={newsletterPdfViewUrl(community.id, file.path)}
+                    />
                   ) : (
                     <a href={file.path} target="_blank" rel="noreferrer">
                       {file.name}

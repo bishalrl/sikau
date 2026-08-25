@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import {
+  ProtectedPdfAttachment,
+  isPdfAttachment,
+  newsletterPdfViewUrl,
+} from "@/components/community/ProtectedPdfAttachment";
 
 type Attachment = {
   id?: string;
@@ -130,7 +135,9 @@ export function NewsletterGroupControl({
         attachments = [
           {
             path: uploadData.path,
-            mime: uploadData.mime,
+            mime:
+              uploadData.mime ||
+              (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/octet-stream"),
             size: uploadData.size,
             name: uploadData.name,
           },
@@ -141,7 +148,9 @@ export function NewsletterGroupControl({
             ? "VIDEO"
             : file.type.startsWith("audio/")
               ? "AUDIO"
-              : "FILE";
+              : file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")
+                ? "FILE"
+                : "FILE";
       }
 
       const response = await fetch(`/api/admin/communities/${communityId}/messages`, {
@@ -232,6 +241,11 @@ export function NewsletterGroupControl({
                         alt={attachment.name}
                         className="max-h-48 rounded-xl object-contain"
                       />
+                    ) : isPdfAttachment(attachment.mime, attachment.name) ? (
+                      <ProtectedPdfAttachment
+                        title={attachment.name}
+                        fileHref={newsletterPdfViewUrl(communityId, attachment.path)}
+                      />
                     ) : (
                       <a href={attachment.path} target="_blank" rel="noreferrer" className="text-sm text-primary">
                         {attachment.name}
@@ -270,7 +284,7 @@ export function NewsletterGroupControl({
         <div className="flex flex-wrap items-center gap-3">
           <input
             type="file"
-            accept="image/*,video/*,.pdf"
+            accept="application/pdf,image/*,video/*"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="max-w-full text-sm"
           />

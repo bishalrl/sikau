@@ -73,6 +73,7 @@ export async function getCommunityBySlug(slug: string) {
     where: { slug },
     include: {
       ebookLinks: { include: { ebook: { select: { id: true, slug: true, title: true } } } },
+      newsletterProduct: { select: { id: true } },
       announcements: {
         where: { pinned: true },
         orderBy: { createdAt: "desc" },

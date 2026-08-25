@@ -38,6 +38,9 @@ export default async function CommunityChatPage({
 
   const canSend = memberCanSend(member.role, member.community.permissions, "text");
   const canModerate = member.role === "ADMIN" || member.role === "MODERATOR";
+  const protectPdfs = Boolean(
+    community.newsletterProduct || community.slug === "newsletter-updates",
+  );
 
   return (
     <div className="community-chat-page">
@@ -57,6 +60,7 @@ export default async function CommunityChatPage({
         }))}
         canSend={canSend}
         canModerate={canModerate}
+        protectPdfs={protectPdfs}
       />
     </div>
   );
