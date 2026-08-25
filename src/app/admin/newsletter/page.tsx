@@ -48,6 +48,18 @@ export default async function AdminNewsletterPage() {
             slug: product.community.slug,
             name: product.community.name,
           },
+          plans: product.plans.map((plan) => ({
+            id: plan.id,
+            code: plan.code,
+            label: plan.label,
+            priceNpr: plan.priceNpr,
+            listPriceNpr: plan.listPriceNpr,
+            discountPercent: plan.discountPercent,
+            perDayNpr: plan.perDayNpr,
+            badge: plan.badge,
+            sortOrder: plan.sortOrder,
+            isActive: plan.isActive,
+          })),
         }}
       />
 

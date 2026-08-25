@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const notes = String(formData.get("notes") ?? "");
     const receipt = formData.get("receipt");
+    const planCode = String(formData.get("planCode") ?? "").trim().toUpperCase();
 
     if (!(receipt instanceof File)) {
       return NextResponse.json({ error: "Receipt is required." }, { status: 400 });
@@ -33,16 +34,29 @@ export async function POST(request: Request) {
           productId: product.id,
         },
       },
+      include: { plan: true },
     });
+
+    const selectedPlan =
+      (planCode
+        ? product.plans.find((p) => p.code === planCode)
+        : null) ??
+      order?.plan ??
+      product.plans[0] ??
+      null;
+
+    const amount = selectedPlan?.priceNpr ?? product.priceNpr;
 
     if (!order) {
       order = await prisma.newsletterOrder.create({
         data: {
           userId: session.user.id,
           productId: product.id,
-          amount: product.priceNpr,
+          planId: selectedPlan?.id ?? null,
+          amount,
           paymentStatus: PaymentStatus.PENDING,
         },
+        include: { plan: true },
       });
     }
 
@@ -56,7 +70,8 @@ export async function POST(request: Request) {
       data: {
         receiptPath,
         notes,
-        amount: product.priceNpr,
+        planId: selectedPlan?.id ?? order.planId,
+        amount,
         paymentStatus: PaymentStatus.PENDING,
       },
     });

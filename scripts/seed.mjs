@@ -494,15 +494,15 @@ You also get:
   const newsletterCommunity = await prisma.community.upsert({
     where: { slug: "newsletter-updates" },
     update: {
-      name: "Newsletter Updates",
-      description: "Paid newsletter updates — members can read only.",
+      name: "NEPSE Weekly",
+      description: "Weekly market research + live session — members can read only.",
       permissions: newsletterPermissions,
       status: "ACTIVE",
     },
     create: {
       slug: "newsletter-updates",
-      name: "Newsletter Updates",
-      description: "Paid newsletter updates — members can read only.",
+      name: "NEPSE Weekly",
+      description: "Weekly market research + live session — members can read only.",
       permissions: newsletterPermissions,
       status: "ACTIVE",
     },
@@ -523,16 +523,59 @@ You also get:
     },
   });
 
-  const existingProduct = await prisma.newsletterProduct.findFirst({
+  const defaultPlans = [
+    {
+      code: "MONTHLY",
+      label: "Monthly",
+      priceNpr: 999,
+      listPriceNpr: null,
+      discountPercent: null,
+      perDayNpr: 33,
+      badge: null,
+      sortOrder: 0,
+    },
+    {
+      code: "QUARTERLY",
+      label: "3 Months",
+      priceNpr: 2499,
+      listPriceNpr: 2997,
+      discountPercent: 17,
+      perDayNpr: 28,
+      badge: "MOST_POPULAR",
+      sortOrder: 1,
+    },
+    {
+      code: "SEMIANNUAL",
+      label: "6 Months",
+      priceNpr: 4499,
+      listPriceNpr: 5994,
+      discountPercent: 25,
+      perDayNpr: 25,
+      badge: null,
+      sortOrder: 2,
+    },
+    {
+      code: "YEARLY",
+      label: "Yearly",
+      priceNpr: 7999,
+      listPriceNpr: 11988,
+      discountPercent: 33,
+      perDayNpr: 22,
+      badge: "BEST_VALUE",
+      sortOrder: 3,
+    },
+  ];
+
+  let existingProduct = await prisma.newsletterProduct.findFirst({
     where: { communityId: newsletterCommunity.id },
   });
 
   if (!existingProduct) {
-    await prisma.newsletterProduct.create({
+    existingProduct = await prisma.newsletterProduct.create({
       data: {
-        title: "Sikau Paisa Newsletter",
+        title: "NEPSE Weekly",
         description:
-          "Get market and money updates in a private community feed. Pay once, then read every incoming update.",
+          "Weekly market research + 1-hour live session for Nepali investors.",
         priceNpr: 999,
         paymentInstructions: "Scan the QR, pay, then upload your receipt for unlock.",
         isActive: true,
@@ -540,15 +583,35 @@ You also get:
       },
     });
   } else {
-    await prisma.newsletterProduct.update({
+    existingProduct = await prisma.newsletterProduct.update({
       where: { id: existingProduct.id },
       data: {
+        title: "NEPSE Weekly",
         isActive: true,
       },
     });
   }
 
-  console.log("Seeded newsletter product + read-only community:", newsletterCommunity.slug);
+  for (const plan of defaultPlans) {
+    await prisma.newsletterPlan.upsert({
+      where: {
+        productId_code: { productId: existingProduct.id, code: plan.code },
+      },
+      update: {
+        label: plan.label,
+        badge: plan.badge,
+        sortOrder: plan.sortOrder,
+        isActive: true,
+      },
+      create: {
+        productId: existingProduct.id,
+        ...plan,
+        isActive: true,
+      },
+    });
+  }
+
+  console.log("Seeded newsletter product + plans + community:", newsletterCommunity.slug);
 }
 
 main()

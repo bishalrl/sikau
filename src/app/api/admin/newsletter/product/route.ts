@@ -49,17 +49,62 @@ export async function PATCH(request: Request) {
         paymentQrPath = await saveUploadedFile(qr, "payment-qr");
       }
 
+      const plansRaw = String(formData.get("plans") ?? "");
+      if (plansRaw) {
+        try {
+          const plans = JSON.parse(plansRaw) as Array<{
+            id: string;
+            priceNpr: number;
+            listPriceNpr?: number | null;
+            discountPercent?: number | null;
+            perDayNpr?: number | null;
+            badge?: string | null;
+          }>;
+          for (const plan of plans) {
+            if (!plan.id) continue;
+            await prisma.newsletterPlan.update({
+              where: { id: plan.id },
+              data: {
+                priceNpr: Number.isFinite(plan.priceNpr) ? plan.priceNpr : undefined,
+                listPriceNpr:
+                  plan.listPriceNpr == null || Number.isNaN(Number(plan.listPriceNpr))
+                    ? null
+                    : Number(plan.listPriceNpr),
+                discountPercent:
+                  plan.discountPercent == null || Number.isNaN(Number(plan.discountPercent))
+                    ? null
+                    : Number(plan.discountPercent),
+                perDayNpr:
+                  plan.perDayNpr == null || Number.isNaN(Number(plan.perDayNpr))
+                    ? null
+                    : Number(plan.perDayNpr),
+                badge: plan.badge || null,
+              },
+            });
+          }
+        } catch {
+          return NextResponse.json({ error: "Invalid plans payload." }, { status: 400 });
+        }
+      }
+
+      const monthlyPlan = await prisma.newsletterPlan.findUnique({
+        where: { productId_code: { productId: product.id, code: "MONTHLY" } },
+      });
+
       const updated = await prisma.newsletterProduct.update({
         where: { id: product.id },
         data: {
           title,
           description,
-          priceNpr: Number.isFinite(priceNpr) ? priceNpr : product.priceNpr,
+          priceNpr: monthlyPlan?.priceNpr ?? (Number.isFinite(priceNpr) ? priceNpr : product.priceNpr),
           paymentInstructions: paymentInstructions || null,
           isActive,
           paymentQrPath,
         },
-        include: { community: true },
+        include: {
+          community: true,
+          plans: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
+        },
       });
 
       await prisma.community.update({

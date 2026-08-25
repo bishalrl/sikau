@@ -3,6 +3,19 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 
+type PlanRow = {
+  id: string;
+  code: string;
+  label: string;
+  priceNpr: number;
+  listPriceNpr: number | null;
+  discountPercent: number | null;
+  perDayNpr: number | null;
+  badge: string | null;
+  sortOrder: number;
+  isActive: boolean;
+};
+
 type Product = {
   id: string;
   title: string;
@@ -12,6 +25,7 @@ type Product = {
   paymentInstructions: string | null;
   isActive: boolean;
   community: { id: string; slug: string; name: string };
+  plans: PlanRow[];
 };
 
 export function NewsletterProductForm({ initial }: { initial: Product }) {
@@ -21,8 +35,24 @@ export function NewsletterProductForm({ initial }: { initial: Product }) {
   const [paymentInstructions, setPaymentInstructions] = useState(initial.paymentInstructions ?? "");
   const [isActive, setIsActive] = useState(initial.isActive);
   const [qrFile, setQrFile] = useState<File | null>(null);
+  const [plans, setPlans] = useState(
+    initial.plans.map((p) => ({
+      id: p.id,
+      code: p.code,
+      label: p.label,
+      priceNpr: String(p.priceNpr),
+      listPriceNpr: p.listPriceNpr != null ? String(p.listPriceNpr) : "",
+      discountPercent: p.discountPercent != null ? String(p.discountPercent) : "",
+      perDayNpr: p.perDayNpr != null ? String(p.perDayNpr) : "",
+      badge: p.badge ?? "",
+    })),
+  );
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+
+  function updatePlan(id: string, field: string, value: string) {
+    setPlans((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
+  }
 
   async function handleSave(event: React.FormEvent) {
     event.preventDefault();
@@ -35,6 +65,19 @@ export function NewsletterProductForm({ initial }: { initial: Product }) {
     formData.append("priceNpr", priceNpr);
     formData.append("paymentInstructions", paymentInstructions);
     formData.append("isActive", String(isActive));
+    formData.append(
+      "plans",
+      JSON.stringify(
+        plans.map((p) => ({
+          id: p.id,
+          priceNpr: Number(p.priceNpr) || 0,
+          listPriceNpr: p.listPriceNpr === "" ? null : Number(p.listPriceNpr),
+          discountPercent: p.discountPercent === "" ? null : Number(p.discountPercent),
+          perDayNpr: p.perDayNpr === "" ? null : Number(p.perDayNpr),
+          badge: p.badge || null,
+        })),
+      ),
+    );
     if (qrFile) formData.append("paymentQr", qrFile);
 
     const response = await fetch("/api/admin/newsletter/product", {
@@ -87,7 +130,7 @@ export function NewsletterProductForm({ initial }: { initial: Product }) {
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Price (NPR)</label>
+        <label className="mb-1 block text-sm font-medium">Fallback price (NPR)</label>
         <input
           type="number"
           min={0}
@@ -96,7 +139,91 @@ export function NewsletterProductForm({ initial }: { initial: Product }) {
           className="w-full rounded-xl border border-outline-variant/50 bg-surface-container-lowest px-4 py-3"
           required
         />
+        <p className="mt-1 text-xs text-on-surface-variant">Used only if a plan is missing.</p>
       </div>
+
+      <div className="rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 p-4">
+        <h3 className="font-headline-sm text-on-background">Subscription plans</h3>
+        <p className="mt-1 text-xs text-on-surface-variant">
+          Edit plan prices shown on the NEPSE Weekly landing page.
+        </p>
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-on-surface-variant">
+              <tr>
+                <th className="pb-2 pr-3 font-semibold">Plan</th>
+                <th className="pb-2 pr-3 font-semibold">Price</th>
+                <th className="pb-2 pr-3 font-semibold">List</th>
+                <th className="pb-2 pr-3 font-semibold">% off</th>
+                <th className="pb-2 pr-3 font-semibold">/day</th>
+                <th className="pb-2 font-semibold">Badge</th>
+              </tr>
+            </thead>
+            <tbody>
+              {plans.map((plan) => (
+                <tr key={plan.id} className="border-t border-outline-variant/20">
+                  <td className="py-2 pr-3 font-medium text-on-background">
+                    {plan.label}
+                    <span className="mt-0.5 block text-xs font-normal text-on-surface-variant">
+                      {plan.code}
+                    </span>
+                  </td>
+                  <td className="py-2 pr-3">
+                    <input
+                      type="number"
+                      min={0}
+                      value={plan.priceNpr}
+                      onChange={(e) => updatePlan(plan.id, "priceNpr", e.target.value)}
+                      className="w-24 rounded-lg border border-outline-variant/50 bg-white px-2 py-1.5"
+                      required
+                    />
+                  </td>
+                  <td className="py-2 pr-3">
+                    <input
+                      type="number"
+                      min={0}
+                      value={plan.listPriceNpr}
+                      onChange={(e) => updatePlan(plan.id, "listPriceNpr", e.target.value)}
+                      className="w-24 rounded-lg border border-outline-variant/50 bg-white px-2 py-1.5"
+                    />
+                  </td>
+                  <td className="py-2 pr-3">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={plan.discountPercent}
+                      onChange={(e) => updatePlan(plan.id, "discountPercent", e.target.value)}
+                      className="w-16 rounded-lg border border-outline-variant/50 bg-white px-2 py-1.5"
+                    />
+                  </td>
+                  <td className="py-2 pr-3">
+                    <input
+                      type="number"
+                      min={0}
+                      value={plan.perDayNpr}
+                      onChange={(e) => updatePlan(plan.id, "perDayNpr", e.target.value)}
+                      className="w-16 rounded-lg border border-outline-variant/50 bg-white px-2 py-1.5"
+                    />
+                  </td>
+                  <td className="py-2">
+                    <select
+                      value={plan.badge}
+                      onChange={(e) => updatePlan(plan.id, "badge", e.target.value)}
+                      className="rounded-lg border border-outline-variant/50 bg-white px-2 py-1.5"
+                    >
+                      <option value="">None</option>
+                      <option value="MOST_POPULAR">Most Popular</option>
+                      <option value="BEST_VALUE">Best Value</option>
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div>
         <label className="mb-1 block text-sm font-medium">Payment instructions</label>
         <textarea

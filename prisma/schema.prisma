@@ -366,12 +366,36 @@ model NewsletterProduct {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
   orders              NewsletterOrder[]
+  plans               NewsletterPlan[]
+}
+
+model NewsletterPlan {
+  id              String   @id @default(cuid())
+  productId       String
+  code            String
+  label           String
+  priceNpr        Int
+  listPriceNpr    Int?
+  discountPercent Int?
+  perDayNpr       Int?
+  /// MOST_POPULAR | BEST_VALUE | null
+  badge           String?
+  sortOrder       Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  product         NewsletterProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orders          NewsletterOrder[]
+
+  @@unique([productId, code])
+  @@index([productId, sortOrder])
 }
 
 model NewsletterOrder {
   id            String          @id @default(cuid())
   userId        String
   productId     String
+  planId        String?
   amount        Int             @default(0)
   currency      String          @default("NPR")
   paymentStatus PaymentStatus   @default(PENDING)
@@ -383,6 +407,7 @@ model NewsletterOrder {
   updatedAt     DateTime        @updatedAt
   user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   product       NewsletterProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  plan          NewsletterPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
   reviewedBy    User?           @relation("NewsletterOrderReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@unique([userId, productId])

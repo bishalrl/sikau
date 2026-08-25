@@ -3882,3 +3882,345 @@ body {
   border-top: 1px solid rgba(187, 202, 191, 0.35);
   background: #f7fbf8;
 }
+
+/* ——— NEPSE Weekly landing ——— */
+.nepse-weekly__brand {
+  font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--nepse-ink);
+  line-height: 1.05;
+  margin: 0 0 12px;
+  animation: nepse-rise 0.7s ease-out both;
+}
+
+.nepse-weekly__benefits {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.nepse-weekly__benefits li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--nepse-ink);
+}
+
+.nepse-weekly__starting {
+  margin: 18px 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--nepse-leaf);
+}
+
+.nepse-weekly__cover-frame {
+  position: relative;
+  width: min(100%, 420px);
+  margin-inline: auto;
+  padding: 12px;
+  border-radius: 22px;
+  background: linear-gradient(160deg, rgba(15, 31, 24, 0.92), rgba(0, 108, 73, 0.75));
+  box-shadow: 0 24px 50px rgba(15, 31, 24, 0.18);
+}
+
+.nepse-weekly__cover-frame .nepse-hero__cover {
+  width: 100%;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.nepse-weekly__cover-caption {
+  margin: 10px 0 2px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #e8f4ec;
+}
+
+.nepse-weekly__section {
+  padding-top: 28px;
+  padding-bottom: 28px;
+}
+
+.nepse-weekly__get-grid {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 720px) {
+  .nepse-weekly__get-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .nepse-weekly__get-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.nepse-weekly__get-card {
+  padding: 22px 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(187, 202, 191, 0.45);
+}
+
+.nepse-weekly__get-card h3 {
+  margin: 12px 0 0;
+  font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--nepse-ink);
+}
+
+.nepse-weekly__get-card p {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--color-on-surface-variant);
+}
+
+.nepse-weekly__preview-section {
+  background: linear-gradient(180deg, rgba(232, 244, 236, 0.65), transparent);
+}
+
+.nepse-weekly__previews {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .nepse-weekly__previews {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+
+.nepse-weekly__preview-frame {
+  margin: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(187, 202, 191, 0.5);
+  box-shadow: 0 12px 28px rgba(15, 31, 24, 0.08);
+}
+
+.nepse-weekly__preview-frame img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.nepse-weekly__preview-frame:nth-child(2) img {
+  object-position: center;
+}
+
+.nepse-weekly__preview-frame:nth-child(3) img {
+  object-position: bottom center;
+}
+
+.nepse-weekly__preview-frame figcaption {
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--nepse-ink);
+  border-top: 1px solid rgba(187, 202, 191, 0.35);
+}
+
+.nepse-weekly__preview-cta {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.nepse-weekly__live {
+  display: grid;
+  gap: 28px;
+  align-items: center;
+}
+
+@media (min-width: 800px) {
+  .nepse-weekly__live {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 40px;
+  }
+}
+
+.nepse-weekly__live-line {
+  margin: 14px 0 0;
+  max-width: 32rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-on-surface-variant);
+}
+
+.nepse-weekly__plans {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 720px) {
+  .nepse-weekly__plans {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .nepse-weekly__plans {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.nepse-weekly__plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 18px 18px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(187, 202, 191, 0.5);
+}
+
+.nepse-weekly__plan--featured {
+  border-color: rgba(0, 108, 73, 0.45);
+  box-shadow: 0 14px 32px rgba(15, 31, 24, 0.1);
+}
+
+.nepse-weekly__plan-badge {
+  position: absolute;
+  top: -10px;
+  left: 16px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: var(--nepse-leaf);
+}
+
+.nepse-weekly__plan h3 {
+  margin: 8px 0 0;
+  font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--nepse-ink);
+}
+
+.nepse-weekly__plan-price {
+  margin: 12px 0 0;
+}
+
+.nepse-weekly__plan-now {
+  display: block;
+  font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--nepse-ink);
+}
+
+.nepse-weekly__plan-save {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--nepse-leaf);
+}
+
+.nepse-weekly__plan-day {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: var(--color-on-surface-variant);
+}
+
+.nepse-weekly__plan-cta {
+  margin-top: auto;
+  padding-top: 18px;
+}
+
+.nepse-weekly__plans-foot {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-on-surface-variant);
+}
+
+.nepse-weekly__final {
+  text-align: center;
+  padding-bottom: 64px;
+}
+
+.nepse-weekly__final .nepse-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.nepse-weekly__final-cta {
+  margin: 24px auto 0;
+  max-width: 320px;
+}
+
+.nepse-weekly__disclaimer {
+  margin: 20px auto 0;
+  max-width: 36rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-on-surface-variant);
+}
+
+.nepse-weekly__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: #fff;
+  background: var(--nepse-leaf);
+  border: 1px solid transparent;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.nepse-weekly__btn:hover {
+  background: #085c3e;
+  transform: translateY(-1px);
+}
+
+.nepse-weekly__btn--outline {
+  width: auto;
+  min-width: 220px;
+  color: var(--nepse-leaf);
+  background: transparent;
+  border-color: rgba(0, 108, 73, 0.45);
+}
+
+.nepse-weekly__btn--outline:hover {
+  background: rgba(0, 108, 73, 0.08);
+}
+
+@media (max-width: 719px) {
+  .nepse-weekly__hero .nepse-hero__grid {
+    gap: 28px;
+  }
+
+  .nepse-weekly__plans,
+  .nepse-weekly__get-grid,
+  .nepse-weekly__previews {
+    grid-template-columns: 1fr;
+  }
+}

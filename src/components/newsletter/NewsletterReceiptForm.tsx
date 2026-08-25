@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 
-export function NewsletterReceiptForm() {
+export function NewsletterReceiptForm({ planCode }: { planCode?: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("");
@@ -21,6 +21,7 @@ export function NewsletterReceiptForm() {
     const formData = new FormData();
     formData.append("notes", notes);
     formData.append("receipt", file);
+    if (planCode) formData.append("planCode", planCode);
 
     const response = await fetch("/api/newsletter/payments", {
       method: "POST",
