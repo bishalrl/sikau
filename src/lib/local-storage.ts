@@ -9,6 +9,7 @@ export const UPLOAD_FOLDERS = [
   "ebooks",
   "blog-covers",
   "community-media",
+  "reviews",
 ] as const;
 
 export type UploadFolder = (typeof UPLOAD_FOLDERS)[number];

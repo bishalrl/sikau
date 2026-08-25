@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Mail,
   Menu,
+  MessageSquareQuote,
   Radio,
   ScrollText,
   Users,
@@ -36,6 +37,7 @@ const links: NavLink[] = [
   { href: "/admin/payments", label: "Payments", icon: Wallet, description: "Review receipts" },
   { href: "/admin/users", label: "Users", icon: Users, description: "Verified emails" },
   { href: "/admin/newsletter", label: "Newsletter", icon: Mail, description: "Paid group & posts" },
+  { href: "/admin/reviews", label: "Reviews", icon: MessageSquareQuote, description: "Public feedback" },
 ];
 
 function isActive(pathname: string, href: string) {
