@@ -42,8 +42,20 @@ const courseSchema = z.object({
   descriptionNe: z.string().optional(),
   category: z.string().min(1),
   level: z.string().min(1),
-  image: z.string().url().optional().or(z.literal("")),
-  coverImage: z.string().url().optional().or(z.literal("")),
+  image: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((value) => !value || value.startsWith("/") || /^https?:\/\//i.test(value), {
+      message: "Image must be a URL or upload path.",
+    }),
+  coverImage: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((value) => !value || value.startsWith("/") || /^https?:\/\//i.test(value), {
+      message: "Cover image must be a URL or upload path.",
+    }),
   paymentQrPath: z.string().optional(),
   instructorName: z.string().min(1),
   priceNpr: z.coerce.number().min(0).default(0),
@@ -128,11 +140,18 @@ export async function POST(request: Request) {
           },
         });
 
+        const usedLessonSlugs = new Set<string>();
         for (const [lessonIndex, lesson] of module.lessons.entries()) {
+          let lessonSlug = lesson.slug.trim() || `lesson-${lessonIndex + 1}`;
+          if (usedLessonSlugs.has(lessonSlug)) {
+            lessonSlug = `${lessonSlug}-${lessonIndex + 1}`;
+          }
+          usedLessonSlugs.add(lessonSlug);
+
           const createdLesson = await tx.lesson.create({
             data: {
               moduleId: createdModule.id,
-              slug: lesson.slug,
+              slug: lessonSlug,
               title: lesson.title,
               titleNe: lesson.titleNe,
               summary: lesson.summary,
@@ -167,6 +186,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
     }
 
+    console.error("Unable to save course:", error);
     return NextResponse.json({ error: "Unable to save course." }, { status: 500 });
   }
 }

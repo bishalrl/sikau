@@ -39,7 +39,7 @@ const emptyForm = {
   isFree: false,
   paymentQrPath: SITE_ASSET_FILES.qr as string,
   paymentInstructions: "Scan QR and upload your receipt for ebook access.",
-  status: "DRAFT",
+  status: "PUBLISHED",
 };
 
 function toDatetimeLocal(value: string | Date | null | undefined) {
@@ -148,18 +148,28 @@ export function EbookManager({
     router.refresh();
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function saveEbook(nextStatus?: "DRAFT" | "PUBLISHED") {
     setSubmitting(true);
     setMessage("");
+    const status = nextStatus ?? form.status;
     const response = await fetch("/api/admin/ebooks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...form,
+        slug: form.slug,
+        title: form.title,
+        titleNe: form.titleNe,
+        description: form.description,
+        content: form.content,
+        coverImage: form.coverImage,
+        filePath: form.filePath,
         priceNpr: Number(form.priceNpr),
         listPriceNpr: form.listPriceNpr.trim() ? Number(form.listPriceNpr) : null,
         promoEndsAt: form.promoEndsAt.trim() ? new Date(form.promoEndsAt).toISOString() : null,
+        isFree: form.isFree,
+        paymentQrPath: form.paymentQrPath,
+        paymentInstructions: form.paymentInstructions,
+        status,
       }),
     });
     const data = await response.json();
@@ -168,10 +178,58 @@ export function EbookManager({
       setMessage(data.error ?? "Unable to save.");
       return;
     }
-    setMessage("Ebook saved.");
-    if (data.ebook?.id) {
-      setForm((current) => ({ ...current, id: data.ebook.id }));
+    const savedStatus = (data.ebook?.status as "DRAFT" | "PUBLISHED" | undefined) ?? status;
+    setForm((current) => ({
+      ...current,
+      id: data.ebook?.id ?? current.id,
+      status: savedStatus,
+    }));
+    setMessage(
+      savedStatus === "PUBLISHED"
+        ? `Published — live at /ebooks/${form.slug}`
+        : "Saved as draft (not visible to buyers yet).",
+    );
+    router.refresh();
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await saveEbook();
+  }
+
+  async function publishEbook(ebook: EbookItem) {
+    setDeletingId(null);
+    setSubmitting(true);
+    setMessage("");
+    const response = await fetch("/api/admin/ebooks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug: ebook.slug,
+        title: ebook.title,
+        titleNe: ebook.titleNe ?? "",
+        description: ebook.description,
+        content: ebook.content ?? "",
+        coverImage: ebook.coverImage ?? "",
+        filePath: ebook.filePath ?? "",
+        priceNpr: ebook.priceNpr,
+        listPriceNpr: ebook.listPriceNpr,
+        promoEndsAt: ebook.promoEndsAt
+          ? new Date(ebook.promoEndsAt).toISOString()
+          : null,
+        isFree: ebook.isFree,
+        paymentQrPath: ebook.paymentQrPath ?? "",
+        paymentInstructions: ebook.paymentInstructions ?? "",
+        status: "PUBLISHED",
+      }),
+    });
+    const data = await response.json();
+    setSubmitting(false);
+    if (!response.ok) {
+      setMessage(data.error ?? "Unable to publish.");
+      return;
     }
+    setMessage(`Published — /ebooks/${ebook.slug}`);
     router.refresh();
   }
 
@@ -249,6 +307,16 @@ export function EbookManager({
               <Button type="button" size="sm" variant="outline" onClick={() => loadEbook(ebook)}>
                 Edit
               </Button>
+              {ebook.status !== "PUBLISHED" && (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => publishEbook(ebook)}
+                  disabled={submitting}
+                >
+                  Publish
+                </Button>
+              )}
               <Button
                 type="button"
                 size="sm"
@@ -403,15 +471,29 @@ export function EbookManager({
           </label>
           <select
             value={form.status}
-            onChange={(e) => setForm({ ...form, status: e.target.value })}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                status: e.target.value === "DRAFT" ? "DRAFT" : "PUBLISHED",
+              })
+            }
             className="rounded-xl border border-outline-variant/50 bg-surface-container-lowest px-4 py-3 text-sm"
           >
-            <option value="DRAFT">Draft</option>
-            <option value="PUBLISHED">Published</option>
+            <option value="PUBLISHED">Published (live for buyers)</option>
+            <option value="DRAFT">Draft (hidden)</option>
           </select>
           <Button type="submit" disabled={submitting}>
             {submitting ? "Saving..." : "Save Ebook"}
           </Button>
+          {form.status !== "PUBLISHED" && (
+            <Button
+              type="button"
+              disabled={submitting || !form.slug || !form.title}
+              onClick={() => saveEbook("PUBLISHED")}
+            >
+              Save & Publish
+            </Button>
+          )}
           {message && <p className="text-sm text-on-surface-variant">{message}</p>}
         </div>
       </form>

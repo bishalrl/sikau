@@ -47,7 +47,8 @@ async function safeQuery<T>(query: () => Promise<T>, fallback: T): Promise<T> {
 
   try {
     return await query();
-  } catch {
+  } catch (error) {
+    console.error("Repository query failed; using fallback.", error);
     return fallback;
   }
 }

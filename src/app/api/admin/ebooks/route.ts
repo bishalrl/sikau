@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
+import { SITE_EBOOK_SLUGS } from "@/lib/ebooks";
 import { prisma } from "@/lib/prisma";
 
 const ebookSchema = z.object({
@@ -27,7 +28,7 @@ const ebookSchema = z.object({
   isFree: z.boolean().default(true),
   paymentQrPath: z.string().optional().or(z.literal("")),
   paymentInstructions: z.string().optional(),
-  status: z.nativeEnum(ContentStatus).default(ContentStatus.DRAFT),
+  status: z.nativeEnum(ContentStatus).default(ContentStatus.PUBLISHED),
 });
 
 export async function POST(request: Request) {
@@ -39,6 +40,11 @@ export async function POST(request: Request) {
   try {
     const input = ebookSchema.parse(await request.json());
     const isFree = input.isFree || input.priceNpr <= 0;
+    const isSiteEbook = SITE_EBOOK_SLUGS.includes(
+      input.slug as (typeof SITE_EBOOK_SLUGS)[number],
+    );
+    // Live /ebooks packages must stay published so Buy never 404s.
+    const finalStatus = isSiteEbook ? ContentStatus.PUBLISHED : input.status;
 
     const ebook = await prisma.ebook.upsert({
       where: { slug: input.slug },
@@ -55,8 +61,8 @@ export async function POST(request: Request) {
         isFree,
         paymentQrPath: input.paymentQrPath || null,
         paymentInstructions: input.paymentInstructions,
-        status: input.status,
-        publishedAt: input.status === ContentStatus.PUBLISHED ? new Date() : null,
+        status: finalStatus,
+        publishedAt: finalStatus === ContentStatus.PUBLISHED ? new Date() : null,
       },
       create: {
         slug: input.slug,
@@ -72,8 +78,8 @@ export async function POST(request: Request) {
         isFree,
         paymentQrPath: input.paymentQrPath || null,
         paymentInstructions: input.paymentInstructions,
-        status: input.status,
-        publishedAt: input.status === ContentStatus.PUBLISHED ? new Date() : null,
+        status: finalStatus,
+        publishedAt: finalStatus === ContentStatus.PUBLISHED ? new Date() : null,
         authorId: session.user.id,
       },
     });
@@ -83,6 +89,7 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
     }
+    console.error("Unable to save ebook:", error);
     return NextResponse.json({ error: "Unable to save ebook." }, { status: 500 });
   }
 }

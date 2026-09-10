@@ -17,7 +17,7 @@ export function MobileBottomNav({ isLoggedIn = false }: Props) {
     { href: "/newsletter", icon: "mail", label: "News" },
     { href: "/community", icon: "groups", label: "Community" },
     isLoggedIn
-      ? { href: "/ebooks#packages", icon: "shopping_bag", label: "Buy" }
+      ? { href: "/learn", icon: "school", label: "Courses" }
       : { href: "/login", icon: "person", label: "Login" },
   ];
 
@@ -32,7 +32,9 @@ export function MobileBottomNav({ isLoggedIn = false }: Props) {
             ? pathname === "/"
             : link.href.startsWith("/ebooks")
               ? pathname === "/ebooks" || pathname.startsWith("/ebooks/")
-              : pathname === link.href || pathname.startsWith(`${link.href}/`);
+              : link.href.startsWith("/learn")
+                ? pathname === "/learn" || pathname.startsWith("/learn/") || pathname.startsWith("/study/")
+                : pathname === link.href || pathname.startsWith(`${link.href}/`);
         return (
           <Link
             key={link.label}

@@ -41,7 +41,11 @@ export function EbookBuyButton({
     }
 
     if (!response.ok) {
-      setError(data.error ?? "Unable to continue.");
+      setError(
+        response.status === 404
+          ? "This ebook is not published yet. Publish it in Admin → Ebooks."
+          : (data.error ?? "Unable to continue."),
+      );
       return;
     }
 

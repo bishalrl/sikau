@@ -29,8 +29,15 @@ export async function POST(request: Request) {
       },
     });
 
-    if (!ebook || ebook.status !== "PUBLISHED") {
+    if (!ebook) {
       return NextResponse.json({ error: "Ebook not found." }, { status: 404 });
+    }
+
+    if (ebook.status !== "PUBLISHED") {
+      return NextResponse.json(
+        { error: "This ebook is not published yet." },
+        { status: 404 },
+      );
     }
 
     const isFree = ebook.isFree || ebook.priceNpr <= 0;
