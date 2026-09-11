@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { StudyPlayer } from "@/components/study/StudyPlayer";
+import { resolveMediaUrl } from "@/lib/r2";
 import { assertStudyAccess, flattenLessons } from "@/lib/study-access";
 import { getCourseBySlug } from "@/lib/repositories";
 import { getCurrentSession } from "@/lib/session";
@@ -63,6 +64,16 @@ export default async function StudyLessonPage({
     })),
   }));
 
+  const assets = await Promise.all(
+    lesson.assets.map(async (asset) => ({
+      id: asset.id,
+      storagePath: await resolveMediaUrl(asset.storagePath),
+      mimeType: asset.mimeType,
+      kind: asset.kind,
+      label: asset.label,
+    })),
+  );
+
   return (
     <div className="study-shell">
       <div className="study-shell__top">
@@ -83,13 +94,7 @@ export default async function StudyLessonPage({
           type: lesson.type,
           durationMins: lesson.durationMins,
           completed: current.completed,
-          assets: lesson.assets.map((asset) => ({
-            id: asset.id,
-            storagePath: asset.storagePath,
-            mimeType: asset.mimeType,
-            kind: asset.kind,
-            label: asset.label,
-          })),
+          assets,
         }}
         prevSlug={prevSlug}
         nextSlug={nextSlug}

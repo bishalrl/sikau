@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { MarkdownEditor } from "@/components/admin/MarkdownEditor";
 import { Button } from "@/components/ui/Button";
+import { uploadCourseAssetToR2 } from "@/lib/r2-browser-upload";
 
 export type EditorAsset = {
   storagePath: string;
@@ -77,6 +79,8 @@ export function createEmptyModule(partial?: Partial<EditorModule>): EditorModule
 }
 
 export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
+  const [uploadStatus, setUploadStatus] = useState("");
+
   function updateModule(moduleKey: string, patch: Partial<EditorModule>) {
     onChange(modules.map((module) => (module.key === moduleKey ? { ...module, ...patch } : module)));
   }
@@ -126,48 +130,46 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
   async function uploadAsset(moduleKey: string, lessonKey: string, file: File | null) {
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("folder", "course-assets");
-    formData.append("file", file);
+    setUploadStatus(`Uploading ${file.name} to Cloudflare R2… 0%`);
+    try {
+      const uploaded = await uploadCourseAssetToR2(file, (percent) => {
+        setUploadStatus(`Uploading ${file.name} to Cloudflare R2… ${percent}%`);
+      });
 
-    const response = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error ?? "Unable to upload asset.");
+      const kind: EditorAsset["kind"] = file.type.startsWith("video/")
+        ? "VIDEO"
+        : file.type.startsWith("image/")
+          ? "IMAGE"
+          : "FILE";
+
+      const asset: EditorAsset = {
+        storagePath: uploaded.storagePath,
+        mimeType: uploaded.mimeType,
+        kind,
+        label: file.name,
+      };
+
+      onChange(
+        modules.map((module) => {
+          if (module.key !== moduleKey) return module;
+          return {
+            ...module,
+            lessons: module.lessons.map((lesson) => {
+              if (lesson.key !== lessonKey) return lesson;
+              return {
+                ...lesson,
+                type: kind === "VIDEO" ? "VIDEO" : lesson.type,
+                assets: [...lesson.assets, asset],
+              };
+            }),
+          };
+        }),
+      );
+      setUploadStatus(`Uploaded ${file.name} to R2.`);
+    } catch (error) {
+      setUploadStatus(error instanceof Error ? error.message : "Upload failed.");
+      throw error;
     }
-
-    const kind: EditorAsset["kind"] = file.type.startsWith("video/")
-      ? "VIDEO"
-      : file.type.startsWith("image/")
-        ? "IMAGE"
-        : "FILE";
-
-    const asset: EditorAsset = {
-      storagePath: data.path,
-      mimeType: file.type || "application/octet-stream",
-      kind,
-      label: file.name,
-    };
-
-    onChange(
-      modules.map((module) => {
-        if (module.key !== moduleKey) return module;
-        return {
-          ...module,
-          lessons: module.lessons.map((lesson) => {
-            if (lesson.key !== lessonKey) return lesson;
-            return {
-              ...lesson,
-              type: kind === "VIDEO" ? "VIDEO" : lesson.type,
-              assets: [...lesson.assets, asset],
-            };
-          }),
-        };
-      }),
-    );
   }
 
   return (
@@ -176,7 +178,7 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
         <div>
           <h2 className="font-headline-md text-on-background">Curriculum</h2>
           <p className="text-sm text-on-surface-variant">
-            Add modules and lessons visually. Upload videos or files directly onto a lesson.
+            Add modules and lessons visually. Large videos (up to multi‑GB) upload directly to Cloudflare R2.
           </p>
         </div>
         <Button
@@ -189,6 +191,7 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
       </div>
 
       {message && <p className="text-sm text-on-surface-variant">{message}</p>}
+      {uploadStatus && <p className="text-sm text-primary">{uploadStatus}</p>}
 
       {modules.map((module, moduleIndex) => (
         <article key={module.key} className="rounded-3xl border border-outline-variant/30 bg-surface-container-low p-5">
