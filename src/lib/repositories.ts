@@ -567,41 +567,64 @@ export async function getManageableBlogPosts() {
 
 export async function getPublishedEbooks(userId?: string) {
   return safeQuery(async () => {
-    const records = await prisma.ebook.findMany({
-      where: {
-        status: "PUBLISHED",
-        // Legacy second SKU retired — community is now an offer on the parent ebook.
-        NOT: { slug: "nepse-trading-community" },
-      },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        titleNe: true,
-        headline: true,
-        description: true,
-        content: true,
-        coverImage: true,
-        filePath: true,
-        priceNpr: true,
-        isFree: true,
-        communityOfferEnabled: true,
-        communityOfferName: true,
-        communityOfferPriceNpr: true,
-        paymentQrPath: true,
-        paymentInstructions: true,
-        status: true,
-        publishedAt: true,
-        createdAt: true,
-        updatedAt: true,
-        authorId: true,
-        orders: userId ? { where: { userId } } : false,
-      },
-      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-    });
+    const baseSelect = {
+      id: true,
+      slug: true,
+      title: true,
+      titleNe: true,
+      description: true,
+      content: true,
+      coverImage: true,
+      filePath: true,
+      priceNpr: true,
+      isFree: true,
+      paymentQrPath: true,
+      paymentInstructions: true,
+      status: true,
+      publishedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      authorId: true,
+      orders: userId ? { where: { userId } } : false,
+    } as const;
+
+    let records;
+    try {
+      records = await prisma.ebook.findMany({
+        where: {
+          status: "PUBLISHED",
+          NOT: { slug: "nepse-trading-community" },
+        },
+        select: {
+          ...baseSelect,
+          headline: true,
+          communityOfferEnabled: true,
+          communityOfferName: true,
+          communityOfferPriceNpr: true,
+        },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+      });
+    } catch (error) {
+      console.error("Published ebook select failed; retrying minimal fields.", error);
+      records = await prisma.ebook.findMany({
+        where: {
+          status: "PUBLISHED",
+          NOT: { slug: "nepse-trading-community" },
+        },
+        select: baseSelect,
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+      });
+    }
 
     return records.map((ebook) => ({
       ...ebook,
+      headline: "headline" in ebook ? ebook.headline : null,
+      communityOfferEnabled: Boolean(
+        "communityOfferEnabled" in ebook ? ebook.communityOfferEnabled : false,
+      ),
+      communityOfferName: "communityOfferName" in ebook ? ebook.communityOfferName : null,
+      communityOfferPriceNpr:
+        "communityOfferPriceNpr" in ebook ? ebook.communityOfferPriceNpr : null,
       paymentStatus: Array.isArray(ebook.orders) ? ebook.orders[0]?.paymentStatus ?? null : null,
       purchaseType: Array.isArray(ebook.orders) ? ebook.orders[0]?.purchaseType ?? null : null,
     }));
@@ -610,43 +633,117 @@ export async function getPublishedEbooks(userId?: string) {
 
 export async function getEbookBySlug(slug: string, userId?: string) {
   return safeQuery(async () => {
-    const ebook = await prisma.ebook.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        titleNe: true,
-        headline: true,
-        description: true,
-        content: true,
-        curriculumJson: true,
-        audienceJson: true,
-        coverImage: true,
-        filePath: true,
-        priceNpr: true,
-        listPriceNpr: true,
-        promoEndsAt: true,
-        isFree: true,
-        paymentQrPath: true,
-        paymentInstructions: true,
-        communityOfferEnabled: true,
-        communityOfferName: true,
-        communityOfferPriceNpr: true,
-        communityAccessType: true,
-        communityBenefitsJson: true,
-        communityId: true,
-        status: true,
-        publishedAt: true,
-        createdAt: true,
-        updatedAt: true,
-        authorId: true,
-        community: { select: { id: true, slug: true, name: true } },
-        author: { select: { name: true } },
-      },
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let ebook: any = null;
 
-    if (!ebook) return null;
+    try {
+      ebook = await prisma.ebook.findUnique({
+        where: { slug },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          titleNe: true,
+          headline: true,
+          description: true,
+          content: true,
+          curriculumJson: true,
+          audienceJson: true,
+          coverImage: true,
+          filePath: true,
+          priceNpr: true,
+          listPriceNpr: true,
+          promoEndsAt: true,
+          isFree: true,
+          paymentQrPath: true,
+          paymentInstructions: true,
+          communityOfferEnabled: true,
+          communityOfferName: true,
+          communityOfferPriceNpr: true,
+          communityAccessType: true,
+          communityBenefitsJson: true,
+          communityId: true,
+          status: true,
+          publishedAt: true,
+          createdAt: true,
+          updatedAt: true,
+          authorId: true,
+          community: { select: { id: true, slug: true, name: true } },
+          author: { select: { name: true } },
+        },
+      });
+    } catch (error) {
+      console.error("Full ebook select failed; retrying minimal fields.", error);
+      ebook = await prisma.ebook.findUnique({
+        where: { slug },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          titleNe: true,
+          description: true,
+          content: true,
+          coverImage: true,
+          filePath: true,
+          priceNpr: true,
+          isFree: true,
+          paymentQrPath: true,
+          paymentInstructions: true,
+          status: true,
+          publishedAt: true,
+          createdAt: true,
+          updatedAt: true,
+          authorId: true,
+          author: { select: { name: true } },
+        },
+      });
+      if (ebook) {
+        ebook = {
+          ...ebook,
+          headline: null,
+          curriculumJson: "[]",
+          audienceJson: "[]",
+          listPriceNpr: null,
+          promoEndsAt: null,
+          communityOfferEnabled: false,
+          communityOfferName: null,
+          communityOfferPriceNpr: null,
+          communityAccessType: null,
+          communityBenefitsJson: "[]",
+          communityId: null,
+          community: null,
+        };
+      }
+    }
+
+    if (!ebook) {
+      const fallback = fallbackEbooks.find((item) => item.slug === slug);
+      return fallback
+        ? {
+            ...fallback,
+            headline: null,
+            curriculumJson: "[]",
+            audienceJson: "[]",
+            listPriceNpr: null,
+            promoEndsAt: null,
+            communityOfferEnabled: false,
+            communityOfferName: null,
+            communityOfferPriceNpr: null,
+            communityAccessType: null,
+            communityBenefitsJson: "[]",
+            communityId: null,
+            community: null,
+            publishedAt: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            authorId: "fallback",
+            author: { name: "Sikau Paisa" },
+            paymentStatus: null,
+            purchaseType: null,
+            order: null,
+          }
+        : null;
+    }
 
     let order: {
       paymentStatus: PaymentStatus;
@@ -656,42 +753,45 @@ export async function getEbookBySlug(slug: string, userId?: string) {
     } | null = null;
 
     if (userId) {
-      order = await prisma.ebookOrder.findUnique({
-        where: { userId_ebookId: { userId, ebookId: ebook.id } },
-        select: {
-          id: true,
-          paymentStatus: true,
-          purchaseType: true,
-          receiptPath: true,
-        },
-      });
-
-      // Legacy community-SKU purchases unlock the canonical guide.
-      if (!order && ebook.slug === "nepse-trading-guide") {
-        const legacy = await prisma.ebook.findUnique({
-          where: { slug: "nepse-trading-community" },
-          select: { id: true },
+      try {
+        order = await prisma.ebookOrder.findUnique({
+          where: { userId_ebookId: { userId, ebookId: ebook.id } },
+          select: {
+            id: true,
+            paymentStatus: true,
+            purchaseType: true,
+            receiptPath: true,
+          },
         });
-        if (legacy) {
-          const legacyOrder = await prisma.ebookOrder.findUnique({
-            where: { userId_ebookId: { userId, ebookId: legacy.id } },
-            select: {
-              id: true,
-              paymentStatus: true,
-              purchaseType: true,
-              receiptPath: true,
-            },
+
+        if (!order && ebook.slug === "nepse-trading-guide") {
+          const legacy = await prisma.ebook.findUnique({
+            where: { slug: "nepse-trading-community" },
+            select: { id: true },
           });
-          if (legacyOrder) {
-            order = {
-              ...legacyOrder,
-              purchaseType:
-                legacyOrder.paymentStatus === PaymentStatus.APPROVED
-                  ? "COMMUNITY_BUNDLE"
-                  : legacyOrder.purchaseType,
-            };
+          if (legacy) {
+            const legacyOrder = await prisma.ebookOrder.findUnique({
+              where: { userId_ebookId: { userId, ebookId: legacy.id } },
+              select: {
+                id: true,
+                paymentStatus: true,
+                purchaseType: true,
+                receiptPath: true,
+              },
+            });
+            if (legacyOrder) {
+              order = {
+                ...legacyOrder,
+                purchaseType:
+                  legacyOrder.paymentStatus === PaymentStatus.APPROVED
+                    ? "COMMUNITY_BUNDLE"
+                    : legacyOrder.purchaseType,
+              };
+            }
           }
         }
+      } catch (error) {
+        console.error("Ebook order lookup failed:", error);
       }
     }
 

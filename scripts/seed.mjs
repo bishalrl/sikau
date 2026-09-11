@@ -179,6 +179,13 @@ async function main() {
   await prisma.ebook.upsert({
     where: { slug: "money-mindset-workbook" },
     update: {
+      title: "Money Mindset Workbook",
+      titleNe: "पैसा सोच अभ्यास पुस्तक",
+      description: "Printable worksheets to audit expenses, set goals, and build better money habits.",
+      status: ContentStatus.PUBLISHED,
+      publishedAt: new Date(),
+      isFree: true,
+      priceNpr: 0,
       content: `## Chapter 1 — Money Awareness
 
 Before you invest, you need clarity.

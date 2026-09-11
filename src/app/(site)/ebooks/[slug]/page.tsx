@@ -1,6 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { EbookProductDetail } from "@/components/ebooks/EbookProductDetail";
-import { LEGACY_NEPSE_BUNDLE_SLUG, CANONICAL_NEPSE_EBOOK_SLUG } from "@/lib/ebooks";
+import {
+  LEGACY_NEPSE_BUNDLE_SLUG,
+  CANONICAL_NEPSE_EBOOK_SLUG,
+  ensureSiteEbooksPublished,
+} from "@/lib/ebooks";
 import { getEbookBySlug } from "@/lib/repositories";
 import { getCurrentSession } from "@/lib/session";
 
@@ -16,6 +20,7 @@ export default async function EbookDetailPage({
     redirect(`/ebooks/${CANONICAL_NEPSE_EBOOK_SLUG}?type=community#access`);
   }
 
+  await ensureSiteEbooksPublished();
   const ebook = await getEbookBySlug(slug, session?.user.id);
 
   if (!ebook || ebook.status !== "PUBLISHED") {
