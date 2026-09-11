@@ -317,22 +317,27 @@ export function EbookManager({
 
   async function handleDelete(ebook: EbookItem) {
     const ok = window.confirm(
-      `Delete "${ebook.title}"? Orders and community links for this ebook will be removed.`,
+      `Delete "${ebook.title}" permanently?\n\nOrders and community links for this ebook will be removed. This cannot be undone.`,
     );
     if (!ok) return;
 
     setDeletingId(ebook.id);
     setMessage("");
-    const response = await fetch(`/api/admin/ebooks/${ebook.id}`, { method: "DELETE" });
-    setDeletingId(null);
-    if (!response.ok) {
-      const data = await response.json();
-      setMessage(data.error ?? "Unable to delete.");
-      return;
+    try {
+      const response = await fetch(`/api/admin/ebooks/${ebook.id}`, { method: "DELETE" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(data.error ?? "Unable to delete.");
+        return;
+      }
+      if (form.id === ebook.id) resetForm();
+      setMessage(`Deleted “${ebook.title}”.`);
+      router.refresh();
+    } catch {
+      setMessage("Unable to delete ebook. Check your connection and try again.");
+    } finally {
+      setDeletingId(null);
     }
-    if (form.id === ebook.id) resetForm();
-    setMessage("Ebook deleted.");
-    router.refresh();
   }
 
   return (

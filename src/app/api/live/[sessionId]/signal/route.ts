@@ -44,15 +44,33 @@ export async function GET(request: Request, { params }: Params) {
 
   const url = new URL(request.url);
   const after = url.searchParams.get("after");
+  const afterId = url.searchParams.get("afterId");
   const afterDate = after ? new Date(after) : new Date(0);
+
+  // Prefer id cursor so signals sharing the same millisecond are not skipped.
+  const cursorFilter = afterId
+    ? {
+        OR: [
+          { createdAt: { gt: afterDate } },
+          { AND: [{ createdAt: afterDate }, { id: { gt: afterId } }] },
+        ],
+      }
+    : { createdAt: { gt: afterDate } };
 
   const signals = await prisma.liveSignal.findMany({
     where: {
       sessionId,
-      createdAt: { gt: afterDate },
-      OR: [{ toUserId: session.user.id }, { toUserId: null, fromUserId: { not: session.user.id } }],
+      AND: [
+        cursorFilter,
+        {
+          OR: [
+            { toUserId: session.user.id },
+            { toUserId: null, fromUserId: { not: session.user.id } },
+          ],
+        },
+      ],
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     take: 100,
   });
 

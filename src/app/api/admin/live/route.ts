@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
 const actionSchema = z.object({
   sessionId: z.string().min(1),
-  action: z.enum(["start", "end", "cancel"]),
+  action: z.enum(["start", "end", "cancel", "claim-host"]),
 });
 
 export async function PATCH(request: Request) {
@@ -77,6 +77,19 @@ export async function PATCH(request: Request) {
 
     if (!liveSession) {
       return NextResponse.json({ error: "Live session not found." }, { status: 404 });
+    }
+
+    if (body.action === "claim-host") {
+      if (liveSession.status !== LiveSessionStatus.LIVE) {
+        return NextResponse.json({ error: "Only a live session can be claimed." }, { status: 400 });
+      }
+
+      const updated = await prisma.liveSession.update({
+        where: { id: liveSession.id },
+        data: { hostId: session.user.id },
+      });
+
+      return NextResponse.json({ session: updated });
     }
 
     if (body.action === "start") {

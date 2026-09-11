@@ -19,9 +19,20 @@ export async function DELETE(
       return NextResponse.json({ error: "Ebook not found." }, { status: 404 });
     }
 
-    await prisma.ebook.delete({ where: { id } });
+    // Clear related rows explicitly so delete works even if DB cascades differ.
+    await prisma.$transaction([
+      prisma.ebookOrder.deleteMany({ where: { ebookId: id } }),
+      prisma.communityEbookLink.deleteMany({ where: { ebookId: id } }),
+      prisma.ebook.delete({ where: { id } }),
+    ]);
+
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Unable to delete ebook." }, { status: 500 });
+  } catch (error) {
+    console.error("Delete ebook failed:", error);
+    const message =
+      error instanceof Error && error.message.includes("Foreign key")
+        ? "This ebook is still linked to other data and could not be deleted."
+        : "Unable to delete ebook.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

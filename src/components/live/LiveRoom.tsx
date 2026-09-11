@@ -29,12 +29,28 @@ type AnnotateMessage =
   | { kind: "stroke-end"; id: string }
   | { kind: "clear" };
 
-const iceServers: RTCIceServer[] = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-  { urls: "stun:stun2.l.google.com:19302" },
-];
+function buildIceServers(): RTCIceServer[] {
+  const servers: RTCIceServer[] = [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun2.l.google.com:19302" },
+  ];
 
+  const turnUrl = process.env.NEXT_PUBLIC_TURN_URL?.trim();
+  const turnUsername = process.env.NEXT_PUBLIC_TURN_USERNAME?.trim();
+  const turnCredential = process.env.NEXT_PUBLIC_TURN_CREDENTIAL?.trim();
+  if (turnUrl && turnUsername && turnCredential) {
+    servers.push({
+      urls: turnUrl,
+      username: turnUsername,
+      credential: turnCredential,
+    });
+  }
+
+  return servers;
+}
+
+const iceServers = buildIceServers();
 const PEN_COLORS = ["#f8fafc", "#ef4444", "#fbbf24", "#22c55e", "#38bdf8"];
 
 export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
@@ -52,12 +68,19 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
   const dataChannelsRef = useRef<Map<string, RTCDataChannel>>(new Map());
   const pendingIceRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
   const pendingJoinsRef = useRef<string[]>([]);
+  const activeViewersRef = useRef<Set<string>>(new Set());
   const hostReadyRef = useRef(false);
-  const lastPollRef = useRef<string>(new Date(0).toISOString());
+  const lastPollAtRef = useRef<string>(new Date(0).toISOString());
+  const lastPollIdRef = useRef<string>("");
+  const seenSignalIdsRef = useRef<Set<string>>(new Set());
+  const pollingRef = useRef(false);
+  const hostIdRef = useRef(hostId);
+  const reconnectTimerRef = useRef<number | null>(null);
   const strokesRef = useRef<Stroke[]>([]);
   const drawingRef = useRef(false);
   const activeStrokeIdRef = useRef<string | null>(null);
   const drawEnabledRef = useRef(false);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
 
   const [status, setStatus] = useState(role === "host" ? "Starting camera..." : "Connecting...");
   const [error, setError] = useState("");
@@ -70,6 +93,7 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
   const [needsGesture, setNeedsGesture] = useState(false);
 
   drawEnabledRef.current = drawEnabled;
+  hostIdRef.current = hostId;
 
   async function postSignal(type: string, toUserId: string | null, payload: Record<string, unknown> = {}) {
     await fetch(`/api/live/${sessionId}/signal`, {
@@ -117,25 +141,28 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
   }, [redrawCanvas]);
 
   async function playRemote(stream: MediaStream) {
+    remoteStreamRef.current = stream;
     const el = remoteVideoRef.current;
     if (!el) return;
-    el.srcObject = stream;
+    if (el.srcObject !== stream) {
+      el.srcObject = stream;
+    }
     try {
-      el.muted = false;
+      // Prefer muted autoplay first so video always appears, then unmute.
+      el.muted = true;
       await el.play();
-      setNeedsGesture(false);
-      setStatus("Live connected");
-    } catch {
-      // Autoplay with sound is often blocked — mute briefly then ask for a tap.
       try {
-        el.muted = true;
+        el.muted = false;
         await el.play();
-        setNeedsGesture(true);
-        setStatus("Tap to enable sound");
+        setNeedsGesture(false);
+        setStatus("Live connected");
       } catch {
         setNeedsGesture(true);
-        setStatus("Tap to play stream");
+        setStatus("Tap to enable sound");
       }
+    } catch {
+      setNeedsGesture(true);
+      setStatus("Tap to play stream");
     }
   }
 
@@ -200,6 +227,14 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
     };
   }
 
+  function closePeer(remoteUserId: string) {
+    const pc = peersRef.current.get(remoteUserId);
+    pc?.close();
+    peersRef.current.delete(remoteUserId);
+    dataChannelsRef.current.delete(remoteUserId);
+    pendingIceRef.current.delete(remoteUserId);
+  }
+
   async function flushIce(remoteUserId: string, pc: RTCPeerConnection) {
     const queued = pendingIceRef.current.get(remoteUserId) ?? [];
     pendingIceRef.current.delete(remoteUserId);
@@ -227,10 +262,13 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
     }
   }
 
-  async function createPeer(remoteUserId: string, asOfferer: boolean) {
+  async function createPeer(remoteUserId: string, asOfferer: boolean, forceNew = false) {
     const existing = peersRef.current.get(remoteUserId);
-    if (existing) {
+    if (existing && !forceNew) {
       return existing;
+    }
+    if (existing && forceNew) {
+      closePeer(remoteUserId);
     }
 
     const pc = new RTCPeerConnection({ iceServers });
@@ -253,10 +291,17 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
     }
 
     pc.ontrack = (event) => {
-      const [stream] = event.streams;
-      if (stream) {
-        attachRemoteTrack(stream);
+      const stream = event.streams[0] ?? new MediaStream([event.track]);
+      if (!event.streams[0]) {
+        // Some browsers deliver tracks without a stream; keep accumulating.
+        const current = remoteStreamRef.current;
+        if (current && current.getTrackById(event.track.id) == null) {
+          current.addTrack(event.track);
+          attachRemoteTrack(current);
+          return;
+        }
       }
+      attachRemoteTrack(stream);
     };
 
     pc.onicecandidate = (event) => {
@@ -269,13 +314,20 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
       if (pc.connectionState === "connected" && role === "viewer") {
         setStatus("Live connected");
       }
-      if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
-        setStatus("Connection interrupted — refreshing…");
+      if (pc.connectionState === "failed") {
+        setStatus("Connection failed — retrying…");
+        if (role === "viewer") {
+          scheduleViewerReconnect();
+        } else if (role === "host" && outboundStreamRef.current) {
+          void handleViewerJoin(remoteUserId, true);
+        }
+      } else if (pc.connectionState === "disconnected") {
+        setStatus("Connection interrupted — waiting…");
       }
     };
 
     if (asOfferer) {
-      const offer = await pc.createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: false });
+      const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       await postSignal("offer", remoteUserId, { sdp: offer });
     }
@@ -283,7 +335,20 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
     return pc;
   }
 
+  function scheduleViewerReconnect() {
+    if (reconnectTimerRef.current != null) return;
+    reconnectTimerRef.current = window.setTimeout(() => {
+      reconnectTimerRef.current = null;
+      const host = hostIdRef.current;
+      closePeer(host);
+      remoteStreamRef.current = null;
+      void postSignal("viewer-join", host, { userId });
+      setStatus("Reconnecting to host…");
+    }, 1500);
+  }
+
   async function renegotiatePeer(remoteUserId: string, pc: RTCPeerConnection) {
+    if (pc.signalingState !== "stable") return;
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     await postSignal("offer", remoteUserId, { sdp: offer });
@@ -301,7 +366,7 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
     await Promise.all(replacements);
   }
 
-  async function handleViewerJoin(fromUserId: string) {
+  async function handleViewerJoin(fromUserId: string, forceNew = false) {
     if (role !== "host") return;
     if (!hostReadyRef.current || !outboundStreamRef.current) {
       if (!pendingJoinsRef.current.includes(fromUserId)) {
@@ -309,40 +374,42 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
       }
       return;
     }
-    setViewerCount((count) => count + 1);
-    await createPeer(fromUserId, true);
+
+    const alreadyCounted = activeViewersRef.current.has(fromUserId);
+    if (!alreadyCounted) {
+      activeViewersRef.current.add(fromUserId);
+      setViewerCount(activeViewersRef.current.size);
+    }
+
+    // Always re-offer on join so refreshes / stale peers still get media.
+    await createPeer(fromUserId, true, forceNew || peersRef.current.has(fromUserId));
   }
 
   async function handleSignal(signal: Signal) {
+    if (seenSignalIdsRef.current.has(signal.id)) return;
+    seenSignalIdsRef.current.add(signal.id);
+    if (seenSignalIdsRef.current.size > 2000) {
+      seenSignalIdsRef.current = new Set([...seenSignalIdsRef.current].slice(-1000));
+    }
+
     const payload = JSON.parse(signal.payload) as Record<string, unknown>;
 
     if (role === "host" && signal.type === "viewer-join") {
-      await handleViewerJoin(signal.fromUserId);
+      await handleViewerJoin(signal.fromUserId, true);
       return;
     }
 
     if (role === "host" && signal.type === "viewer-leave") {
-      const pc = peersRef.current.get(signal.fromUserId);
-      pc?.close();
-      peersRef.current.delete(signal.fromUserId);
-      dataChannelsRef.current.delete(signal.fromUserId);
-      pendingIceRef.current.delete(signal.fromUserId);
-      setViewerCount((count) => Math.max(0, count - 1));
+      closePeer(signal.fromUserId);
+      activeViewersRef.current.delete(signal.fromUserId);
+      setViewerCount(activeViewersRef.current.size);
       return;
     }
 
     if (signal.type === "offer" && role === "viewer") {
-      let pc = peersRef.current.get(signal.fromUserId);
-      if (pc) {
-        // Renegotiation (e.g. host started presenting).
-        await pc.setRemoteDescription(payload.sdp as RTCSessionDescriptionInit);
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        await postSignal("answer", signal.fromUserId, { sdp: answer });
-        await flushIce(signal.fromUserId, pc);
-        return;
-      }
-      pc = await createPeer(signal.fromUserId, false);
+      // Host may recreate the peer on rejoin/present — always accept with a fresh PC.
+      closePeer(signal.fromUserId);
+      const pc = await createPeer(signal.fromUserId, false);
       await pc.setRemoteDescription(payload.sdp as RTCSessionDescriptionInit);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -353,10 +420,15 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
 
     if (signal.type === "answer" && role === "host") {
       const pc = peersRef.current.get(signal.fromUserId);
-      if (pc) {
-        await pc.setRemoteDescription(payload.sdp as RTCSessionDescriptionInit);
-        await flushIce(signal.fromUserId, pc);
+      if (!pc) return;
+      if (pc.signalingState !== "have-local-offer") {
+        return;
       }
+      if (pc.currentRemoteDescription) {
+        return;
+      }
+      await pc.setRemoteDescription(payload.sdp as RTCSessionDescriptionInit);
+      await flushIce(signal.fromUserId, pc);
       return;
     }
 
@@ -383,6 +455,13 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
     async function boot() {
       try {
         if (role === "host") {
+          // Ensure joins route to this browser's admin account.
+          await fetch("/api/admin/live", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId, action: "claim-host" }),
+          });
+
           const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: { echoCancellation: true, noiseSuppression: true },
@@ -403,10 +482,10 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
           const pending = [...pendingJoinsRef.current];
           pendingJoinsRef.current = [];
           for (const viewerId of pending) {
-            await handleViewerJoin(viewerId);
+            await handleViewerJoin(viewerId, true);
           }
         } else {
-          await postSignal("viewer-join", hostId, { userId });
+          await postSignal("viewer-join", hostIdRef.current, { userId });
           setStatus("Waiting for host stream...");
         }
       } catch (err) {
@@ -420,10 +499,16 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
     window.addEventListener("resize", resizeCanvas);
 
     const poll = window.setInterval(async () => {
+      if (pollingRef.current || cancelled) return;
+      pollingRef.current = true;
       try {
-        const response = await fetch(
-          `/api/live/${sessionId}/signal?after=${encodeURIComponent(lastPollRef.current)}`,
-        );
+        const params = new URLSearchParams({
+          after: lastPollAtRef.current,
+        });
+        if (lastPollIdRef.current) {
+          params.set("afterId", lastPollIdRef.current);
+        }
+        const response = await fetch(`/api/live/${sessionId}/signal?${params.toString()}`);
         const data = await response.json();
         if (!response.ok) {
           setError(data.error ?? "Signal error");
@@ -431,24 +516,46 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
         }
 
         for (const signal of data.signals as Signal[]) {
-          lastPollRef.current = signal.createdAt;
-          await handleSignal(signal);
+          lastPollAtRef.current = signal.createdAt;
+          lastPollIdRef.current = signal.id;
+          try {
+            await handleSignal(signal);
+          } catch (err) {
+            console.error("Live signal handling failed:", signal.type, err);
+          }
         }
 
         if (data.session?.status === "ENDED") {
           setStatus("Live session ended");
         }
+        if (data.session?.hostId && role === "viewer") {
+          hostIdRef.current = data.session.hostId as string;
+        }
       } catch {
         // Keep polling.
+      } finally {
+        pollingRef.current = false;
       }
     }, 900);
+
+    // Viewer safety: re-announce join if no media arrives.
+    let joinRetry: number | null = null;
+    if (role === "viewer") {
+      joinRetry = window.setInterval(() => {
+        if (remoteStreamRef.current) return;
+        const host = hostIdRef.current;
+        void postSignal("viewer-join", host, { userId });
+      }, 8000);
+    }
 
     return () => {
       cancelled = true;
       window.clearInterval(poll);
+      if (joinRetry != null) window.clearInterval(joinRetry);
+      if (reconnectTimerRef.current != null) window.clearTimeout(reconnectTimerRef.current);
       window.removeEventListener("resize", resizeCanvas);
       if (role === "viewer") {
-        void postSignal("viewer-leave", hostId, { userId });
+        void postSignal("viewer-leave", hostIdRef.current, { userId });
       }
       cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
       displayStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -705,7 +812,7 @@ export function LiveRoom({ sessionId, title, hostId, role, userId }: Props) {
             )}
           </>
         ) : (
-          <video ref={remoteVideoRef} autoPlay playsInline className="live-room__video" />
+          <video ref={remoteVideoRef} autoPlay playsInline muted className="live-room__video" />
         )}
 
         <canvas
