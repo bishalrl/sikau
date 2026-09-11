@@ -34,7 +34,7 @@ export default async function EbookReadPage({
 
   const unlocked = ebook.isFree || ebook.paymentStatus === "APPROVED";
   if (!unlocked) {
-    redirect(`/ebooks/${ebook.slug}/pay`);
+    redirect(`/ebooks/${ebook.slug}/pay?type=solo`);
   }
 
   const pdfHref = resolveEbookPdf(ebook.filePath);

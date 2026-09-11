@@ -642,18 +642,64 @@ export async function getEbookBySlug(slug: string, userId?: string) {
         updatedAt: true,
         authorId: true,
         community: { select: { id: true, slug: true, name: true } },
-        orders: userId ? { where: { userId } } : false,
         author: { select: { name: true } },
       },
     });
 
     if (!ebook) return null;
 
+    let order: {
+      paymentStatus: PaymentStatus;
+      purchaseType?: string | null;
+      receiptPath?: string | null;
+      id?: string;
+    } | null = null;
+
+    if (userId) {
+      order = await prisma.ebookOrder.findUnique({
+        where: { userId_ebookId: { userId, ebookId: ebook.id } },
+        select: {
+          id: true,
+          paymentStatus: true,
+          purchaseType: true,
+          receiptPath: true,
+        },
+      });
+
+      // Legacy community-SKU purchases unlock the canonical guide.
+      if (!order && ebook.slug === "nepse-trading-guide") {
+        const legacy = await prisma.ebook.findUnique({
+          where: { slug: "nepse-trading-community" },
+          select: { id: true },
+        });
+        if (legacy) {
+          const legacyOrder = await prisma.ebookOrder.findUnique({
+            where: { userId_ebookId: { userId, ebookId: legacy.id } },
+            select: {
+              id: true,
+              paymentStatus: true,
+              purchaseType: true,
+              receiptPath: true,
+            },
+          });
+          if (legacyOrder) {
+            order = {
+              ...legacyOrder,
+              purchaseType:
+                legacyOrder.paymentStatus === PaymentStatus.APPROVED
+                  ? "COMMUNITY_BUNDLE"
+                  : legacyOrder.purchaseType,
+            };
+          }
+        }
+      }
+    }
+
     return {
       ...ebook,
-      paymentStatus: Array.isArray(ebook.orders) ? ebook.orders[0]?.paymentStatus ?? null : null,
-      purchaseType: Array.isArray(ebook.orders) ? ebook.orders[0]?.purchaseType ?? null : null,
-      order: Array.isArray(ebook.orders) ? ebook.orders[0] ?? null : null,
+      paymentStatus: order?.paymentStatus ?? null,
+      purchaseType: order?.purchaseType ?? null,
+      order,
     };
   }, (fallbackEbooks.find((item) => item.slug === slug) as never) ?? null);
 }

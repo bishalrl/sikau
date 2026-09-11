@@ -8,6 +8,8 @@ type Props = {
   ebookSlug: string;
   label: string;
   purchaseType?: "SOLO_EBOOK" | "COMMUNITY_BUNDLE";
+  /** When true, skip checkout API and open the reader directly. */
+  alreadyUnlocked?: boolean;
   size?: "sm" | "md" | "lg";
   variant?: "primary" | "secondary" | "outline" | "ghost" | "gold";
   className?: string;
@@ -17,6 +19,7 @@ export function EbookBuyButton({
   ebookSlug,
   label,
   purchaseType = "SOLO_EBOOK",
+  alreadyUnlocked = false,
   size = "lg",
   variant = "primary",
   className = "",
@@ -26,6 +29,12 @@ export function EbookBuyButton({
   const [error, setError] = useState("");
 
   async function handleClick() {
+    const readPath = `/ebooks/${ebookSlug}/read`;
+    if (alreadyUnlocked) {
+      router.push(readPath);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -34,34 +43,39 @@ export function EbookBuyButton({
         ? `/ebooks/${ebookSlug}/pay?type=community`
         : `/ebooks/${ebookSlug}/pay?type=solo`;
 
-    const response = await fetch("/api/ebooks/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ebookSlug, purchaseType }),
-    });
-    const data = await response.json();
-    setLoading(false);
+    try {
+      const response = await fetch("/api/ebooks/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ebookSlug, purchaseType }),
+      });
+      const data = await response.json().catch(() => ({}));
+      setLoading(false);
 
-    if (response.status === 401) {
-      router.push(`/login?callbackUrl=${encodeURIComponent(payHint)}`);
-      return;
+      if (response.status === 401) {
+        router.push(`/login?callbackUrl=${encodeURIComponent(payHint)}`);
+        return;
+      }
+
+      if (!response.ok) {
+        setError(
+          response.status === 404
+            ? "This ebook is not published yet. Publish it in Admin → Ebooks."
+            : (data.error ?? "Unable to continue."),
+        );
+        return;
+      }
+
+      if (data.paymentStatus === "APPROVED") {
+        router.push(readPath);
+        return;
+      }
+
+      router.push(data.redirectTo ?? payHint);
+    } catch {
+      setLoading(false);
+      setError("Network error. Please try again.");
     }
-
-    if (!response.ok) {
-      setError(
-        response.status === 404
-          ? "This ebook is not published yet. Publish it in Admin → Ebooks."
-          : (data.error ?? "Unable to continue."),
-      );
-      return;
-    }
-
-    if (data.paymentStatus === "APPROVED") {
-      router.push(`/ebooks/${ebookSlug}/read`);
-      return;
-    }
-
-    router.push(data.redirectTo ?? payHint);
   }
 
   return (

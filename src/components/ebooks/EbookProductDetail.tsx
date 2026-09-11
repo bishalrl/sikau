@@ -76,6 +76,7 @@ export function EbookProductDetail({ ebook }: Props) {
                   ebookSlug={ebook.slug}
                   label={hasBundle ? "Open ebook" : "Start reading"}
                   purchaseType="SOLO_EBOOK"
+                  alreadyUnlocked
                   className="nepse-hero__cta-btn"
                 />
               ) : (
@@ -187,6 +188,7 @@ export function EbookProductDetail({ ebook }: Props) {
                       : "Get the Ebook"
                 }
                 purchaseType="SOLO_EBOOK"
+                alreadyUnlocked={approved}
               />
             </article>
 
@@ -214,6 +216,7 @@ export function EbookProductDetail({ ebook }: Props) {
                   ebookSlug={ebook.slug}
                   label={hasBundle ? "Open community ebook" : "Join Community"}
                   purchaseType="COMMUNITY_BUNDLE"
+                  alreadyUnlocked={hasBundle}
                 />
               </article>
             )}
