@@ -1,4 +1,4 @@
-import { CommunityMemberRole, CommunityStatus, PaymentStatus } from "@prisma/client";
+import { CommunityMemberRole, CommunityStatus, PaymentStatus, Prisma } from "@prisma/client";
 import { NEWSLETTER_COMMUNITY_PERMISSIONS } from "@/lib/community-access";
 import { prisma } from "@/lib/prisma";
 
@@ -47,45 +47,181 @@ export const DEFAULT_NEWSLETTER_PLANS = [
   },
 ] as const;
 
-export async function ensureNewsletterPlans(productId: string) {
-  for (const plan of DEFAULT_NEWSLETTER_PLANS) {
-    await prisma.newsletterPlan.upsert({
-      where: {
-        productId_code: { productId, code: plan.code },
-      },
-      update: {
-        isActive: true,
-      },
-      create: {
-        productId,
-        code: plan.code,
-        label: plan.label,
-        priceNpr: plan.priceNpr,
-        listPriceNpr: plan.listPriceNpr,
-        discountPercent: plan.discountPercent,
-        perDayNpr: plan.perDayNpr,
-        badge: plan.badge,
-        sortOrder: plan.sortOrder,
-        isActive: true,
-      },
-    });
-  }
+export type NewsletterPlanView = {
+  id: string;
+  productId: string;
+  code: string;
+  label: string;
+  priceNpr: number;
+  listPriceNpr: number | null;
+  discountPercent: number | null;
+  perDayNpr: number | null;
+  badge: string | null;
+  sortOrder: number;
+  isActive: boolean;
+};
 
-  return prisma.newsletterPlan.findMany({
-    where: { productId, isActive: true },
-    orderBy: { sortOrder: "asc" },
-  });
+type NewsletterCommunity = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  coverImage: string | null;
+  permissions: string;
+  status: CommunityStatus;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type NewsletterProductView = {
+  id: string;
+  title: string;
+  description: string;
+  priceNpr: number;
+  paymentQrPath: string | null;
+  paymentInstructions: string | null;
+  isActive: boolean;
+  communityId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  community: NewsletterCommunity;
+  plans: NewsletterPlanView[];
+};
+
+function isMissingPlanSchemaError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
+  if (error.code !== "P2021" && error.code !== "P2022") return false;
+  const meta = error.meta as { modelName?: string; table?: string; column?: string } | undefined;
+  const haystack = `${meta?.modelName ?? ""} ${meta?.table ?? ""} ${meta?.column ?? ""} ${error.message}`;
+  return /NewsletterPlan|planId/i.test(haystack);
+}
+
+function fallbackPlans(productId: string): NewsletterPlanView[] {
+  return DEFAULT_NEWSLETTER_PLANS.map((plan, index) => ({
+    id: `fallback-${plan.code}`,
+    productId,
+    code: plan.code,
+    label: plan.label,
+    priceNpr: plan.priceNpr,
+    listPriceNpr: plan.listPriceNpr,
+    discountPercent: plan.discountPercent,
+    perDayNpr: plan.perDayNpr,
+    badge: plan.badge,
+    sortOrder: plan.sortOrder ?? index,
+    isActive: true,
+  }));
+}
+
+function toPlanViews(
+  productId: string,
+  plans: Array<{
+    id: string;
+    productId: string;
+    code: string;
+    label: string;
+    priceNpr: number;
+    listPriceNpr: number | null;
+    discountPercent: number | null;
+    perDayNpr: number | null;
+    badge: string | null;
+    sortOrder: number;
+    isActive: boolean;
+  }>,
+): NewsletterPlanView[] {
+  return plans.map((plan) => ({
+    id: plan.id,
+    productId: plan.productId || productId,
+    code: plan.code,
+    label: plan.label,
+    priceNpr: plan.priceNpr,
+    listPriceNpr: plan.listPriceNpr,
+    discountPercent: plan.discountPercent,
+    perDayNpr: plan.perDayNpr,
+    badge: plan.badge,
+    sortOrder: plan.sortOrder,
+    isActive: plan.isActive,
+  }));
+}
+
+export async function ensureNewsletterPlans(productId: string): Promise<NewsletterPlanView[]> {
+  try {
+    for (const plan of DEFAULT_NEWSLETTER_PLANS) {
+      await prisma.newsletterPlan.upsert({
+        where: {
+          productId_code: { productId, code: plan.code },
+        },
+        update: {
+          isActive: true,
+        },
+        create: {
+          productId,
+          code: plan.code,
+          label: plan.label,
+          priceNpr: plan.priceNpr,
+          listPriceNpr: plan.listPriceNpr,
+          discountPercent: plan.discountPercent,
+          perDayNpr: plan.perDayNpr,
+          badge: plan.badge,
+          sortOrder: plan.sortOrder,
+          isActive: true,
+        },
+      });
+    }
+
+    const plans = await prisma.newsletterPlan.findMany({
+      where: { productId, isActive: true },
+      orderBy: { sortOrder: "asc" },
+    });
+    return toPlanViews(productId, plans);
+  } catch (error) {
+    if (isMissingPlanSchemaError(error)) {
+      console.error(
+        "NewsletterPlan table/column missing. Run `npx prisma db push` on the server.",
+        error,
+      );
+      return fallbackPlans(productId);
+    }
+    throw error;
+  }
+}
+
+async function findNewsletterProductWithPlans(): Promise<NewsletterProductView | null> {
+  try {
+    const product = await prisma.newsletterProduct.findFirst({
+      include: {
+        community: true,
+        plans: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+    if (!product) return null;
+    return {
+      ...product,
+      plans: toPlanViews(product.id, product.plans),
+    };
+  } catch (error) {
+    if (!isMissingPlanSchemaError(error)) throw error;
+
+    console.error(
+      "NewsletterPlan table missing during product load. Run `npx prisma db push` on the server.",
+      error,
+    );
+
+    const product = await prisma.newsletterProduct.findFirst({
+      include: { community: true },
+      orderBy: { createdAt: "asc" },
+    });
+    if (!product) return null;
+    return {
+      ...product,
+      plans: fallbackPlans(product.id),
+    };
+  }
 }
 
 /** Ensure a newsletter community + product + plans exist (singleton). */
-export async function ensureNewsletterProduct(adminUserId?: string) {
-  let existing = await prisma.newsletterProduct.findFirst({
-    include: {
-      community: true,
-      plans: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
-    },
-    orderBy: { createdAt: "asc" },
-  });
+export async function ensureNewsletterProduct(adminUserId?: string): Promise<NewsletterProductView> {
+  let existing = await findNewsletterProductWithPlans();
 
   if (!existing) {
     const community = await prisma.community.upsert({
@@ -119,7 +255,7 @@ export async function ensureNewsletterProduct(adminUserId?: string) {
       });
     }
 
-    existing = await prisma.newsletterProduct.create({
+    const created = await prisma.newsletterProduct.create({
       data: {
         title: "NEPSE Weekly",
         description:
@@ -129,11 +265,13 @@ export async function ensureNewsletterProduct(adminUserId?: string) {
         isActive: true,
         communityId: community.id,
       },
-      include: {
-        community: true,
-        plans: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
-      },
+      include: { community: true },
     });
+
+    existing = {
+      ...created,
+      plans: [],
+    };
   } else if (adminUserId) {
     await prisma.communityMember.upsert({
       where: {
@@ -155,15 +293,8 @@ export async function ensureNewsletterProduct(adminUserId?: string) {
   return { ...existing, plans };
 }
 
-export async function getActiveNewsletterProduct() {
-  let product = await prisma.newsletterProduct.findFirst({
-    where: { isActive: true },
-    include: {
-      community: true,
-      plans: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
-    },
-    orderBy: { createdAt: "asc" },
-  });
+export async function getActiveNewsletterProduct(): Promise<NewsletterProductView | null> {
+  let product = await findNewsletterProductWithPlans();
 
   if (!product) {
     product = await ensureNewsletterProduct();
@@ -176,43 +307,79 @@ export async function getActiveNewsletterProduct() {
 }
 
 export async function getNewsletterPlanByCode(productId: string, code: string) {
-  return prisma.newsletterPlan.findUnique({
-    where: { productId_code: { productId, code: code.toUpperCase() } },
-  });
+  try {
+    return await prisma.newsletterPlan.findUnique({
+      where: { productId_code: { productId, code: code.toUpperCase() } },
+    });
+  } catch (error) {
+    if (!isMissingPlanSchemaError(error)) throw error;
+    return fallbackPlans(productId).find((plan) => plan.code === code.toUpperCase()) ?? null;
+  }
 }
 
 export async function getNewsletterProductForUser(userId: string) {
   const product = await getActiveNewsletterProduct();
   if (!product) return null;
 
-  const approved = await prisma.newsletterOrder.findFirst({
-    where: {
-      userId,
-      productId: product.id,
-      paymentStatus: PaymentStatus.APPROVED,
-    },
-    include: { plan: true },
-    orderBy: { reviewedAt: "desc" },
-  });
+  try {
+    const approved = await prisma.newsletterOrder.findFirst({
+      where: {
+        userId,
+        productId: product.id,
+        paymentStatus: PaymentStatus.APPROVED,
+      },
+      include: { plan: true },
+      orderBy: { reviewedAt: "desc" },
+    });
 
-  const pending = await prisma.newsletterOrder.findFirst({
-    where: {
-      userId,
-      productId: product.id,
-      paymentStatus: PaymentStatus.PENDING,
-      receiptPath: { not: null },
-    },
-    include: { plan: true },
-    orderBy: { createdAt: "desc" },
-  });
+    const pending = await prisma.newsletterOrder.findFirst({
+      where: {
+        userId,
+        productId: product.id,
+        paymentStatus: PaymentStatus.PENDING,
+        receiptPath: { not: null },
+      },
+      include: { plan: true },
+      orderBy: { createdAt: "desc" },
+    });
 
-  const order = approved ?? pending;
+    const order = approved ?? pending;
 
-  return {
-    ...product,
-    order,
-    paymentStatus: order?.paymentStatus ?? null,
-  };
+    return {
+      ...product,
+      order,
+      paymentStatus: order?.paymentStatus ?? null,
+    };
+  } catch (error) {
+    if (!isMissingPlanSchemaError(error)) throw error;
+
+    const approved = await prisma.newsletterOrder.findFirst({
+      where: {
+        userId,
+        productId: product.id,
+        paymentStatus: PaymentStatus.APPROVED,
+      },
+      orderBy: { reviewedAt: "desc" },
+    });
+
+    const pending = await prisma.newsletterOrder.findFirst({
+      where: {
+        userId,
+        productId: product.id,
+        paymentStatus: PaymentStatus.PENDING,
+        receiptPath: { not: null },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const order = approved ?? pending;
+
+    return {
+      ...product,
+      order: order ? { ...order, plan: null } : null,
+      paymentStatus: order?.paymentStatus ?? null,
+    };
+  }
 }
 
 export async function userHasApprovedNewsletter(userId: string, productId: string) {
