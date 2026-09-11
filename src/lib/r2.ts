@@ -156,13 +156,17 @@ export async function getSignedDownloadUrl(storagePath: string, expiresInSeconds
     return storagePath;
   }
 
-  const publicBase = process.env.R2_PUBLIC_BASE_URL?.trim().replace(/\/$/, "");
   const key = r2KeyFromStoragePath(storagePath);
-  if (publicBase) {
+
+  // Prefer signed S3 URLs so playback works even when the object is private.
+  // Only use a public CDN/base URL when R2_USE_PUBLIC_URL=true.
+  const usePublic = process.env.R2_USE_PUBLIC_URL === "true";
+  const publicBase = process.env.R2_PUBLIC_BASE_URL?.trim().replace(/\/$/, "");
+  if (usePublic && publicBase) {
     return `${publicBase}/${key}`;
   }
 
-  const client = createR2Client("read");
+  const client = createR2Client("write");
   const command = new GetObjectCommand({
     Bucket: getR2Bucket(),
     Key: key,
