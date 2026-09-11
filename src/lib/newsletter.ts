@@ -1,4 +1,4 @@
-import { CommunityMemberRole, CommunityStatus, PaymentStatus, Prisma } from "@prisma/client";
+import { CommunityMemberRole, CommunityStatus, PaymentStatus } from "@prisma/client";
 import { NEWSLETTER_COMMUNITY_PERMISSIONS } from "@/lib/community-access";
 import { prisma } from "@/lib/prisma";
 
@@ -89,11 +89,52 @@ export type NewsletterProductView = {
 };
 
 function isMissingPlanSchemaError(error: unknown) {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
-  if (error.code !== "P2021" && error.code !== "P2022") return false;
-  const meta = error.meta as { modelName?: string; table?: string; column?: string } | undefined;
-  const haystack = `${meta?.modelName ?? ""} ${meta?.table ?? ""} ${meta?.column ?? ""} ${error.message}`;
-  return /NewsletterPlan|planId/i.test(haystack);
+  const text = [
+    error instanceof Error ? error.message : "",
+    typeof error === "object" && error && "code" in error ? String((error as { code?: string }).code) : "",
+    typeof error === "object" && error && "meta" in error ? JSON.stringify((error as { meta?: unknown }).meta) : "",
+    error instanceof Error && error.cause ? String(error.cause) : "",
+    String(error),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    text.includes("newsletterplan") ||
+    text.includes("planid") ||
+    (text.includes("p2021") && text.includes("newsletter")) ||
+    (text.includes("tabledoesnotexist") && text.includes("newsletter"))
+  );
+}
+
+/** Load product without joining plans, then attach plans (or fallbacks). */
+async function findNewsletterProductWithPlans(): Promise<NewsletterProductView | null> {
+  const product = await prisma.newsletterProduct.findFirst({
+    include: { community: true },
+    orderBy: { createdAt: "asc" },
+  });
+  if (!product) return null;
+
+  try {
+    const plans = await prisma.newsletterPlan.findMany({
+      where: { productId: product.id, isActive: true },
+      orderBy: { sortOrder: "asc" },
+    });
+    return {
+      ...product,
+      plans: toPlanViews(product.id, plans),
+    };
+  } catch (error) {
+    if (!isMissingPlanSchemaError(error)) throw error;
+    console.error(
+      "NewsletterPlan table missing during product load. Run `npx prisma db push` on the server.",
+      error,
+    );
+    return {
+      ...product,
+      plans: fallbackPlans(product.id),
+    };
+  }
 }
 
 function fallbackPlans(productId: string): NewsletterPlanView[] {
@@ -182,40 +223,6 @@ export async function ensureNewsletterPlans(productId: string): Promise<Newslett
       return fallbackPlans(productId);
     }
     throw error;
-  }
-}
-
-async function findNewsletterProductWithPlans(): Promise<NewsletterProductView | null> {
-  try {
-    const product = await prisma.newsletterProduct.findFirst({
-      include: {
-        community: true,
-        plans: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
-      },
-      orderBy: { createdAt: "asc" },
-    });
-    if (!product) return null;
-    return {
-      ...product,
-      plans: toPlanViews(product.id, product.plans),
-    };
-  } catch (error) {
-    if (!isMissingPlanSchemaError(error)) throw error;
-
-    console.error(
-      "NewsletterPlan table missing during product load. Run `npx prisma db push` on the server.",
-      error,
-    );
-
-    const product = await prisma.newsletterProduct.findFirst({
-      include: { community: true },
-      orderBy: { createdAt: "asc" },
-    });
-    if (!product) return null;
-    return {
-      ...product,
-      plans: fallbackPlans(product.id),
-    };
   }
 }
 
@@ -321,6 +328,22 @@ export async function getNewsletterProductForUser(userId: string) {
   const product = await getActiveNewsletterProduct();
   if (!product) return null;
 
+  // Avoid selecting planId / joining NewsletterPlan so older DBs still load the page.
+  const orderSelect = {
+    id: true,
+    userId: true,
+    productId: true,
+    amount: true,
+    currency: true,
+    paymentStatus: true,
+    receiptPath: true,
+    notes: true,
+    reviewedById: true,
+    reviewedAt: true,
+    createdAt: true,
+    updatedAt: true,
+  } as const;
+
   try {
     const approved = await prisma.newsletterOrder.findFirst({
       where: {
@@ -328,7 +351,7 @@ export async function getNewsletterProductForUser(userId: string) {
         productId: product.id,
         paymentStatus: PaymentStatus.APPROVED,
       },
-      include: { plan: true },
+      select: orderSelect,
       orderBy: { reviewedAt: "desc" },
     });
 
@@ -339,36 +362,7 @@ export async function getNewsletterProductForUser(userId: string) {
         paymentStatus: PaymentStatus.PENDING,
         receiptPath: { not: null },
       },
-      include: { plan: true },
-      orderBy: { createdAt: "desc" },
-    });
-
-    const order = approved ?? pending;
-
-    return {
-      ...product,
-      order,
-      paymentStatus: order?.paymentStatus ?? null,
-    };
-  } catch (error) {
-    if (!isMissingPlanSchemaError(error)) throw error;
-
-    const approved = await prisma.newsletterOrder.findFirst({
-      where: {
-        userId,
-        productId: product.id,
-        paymentStatus: PaymentStatus.APPROVED,
-      },
-      orderBy: { reviewedAt: "desc" },
-    });
-
-    const pending = await prisma.newsletterOrder.findFirst({
-      where: {
-        userId,
-        productId: product.id,
-        paymentStatus: PaymentStatus.PENDING,
-        receiptPath: { not: null },
-      },
+      select: orderSelect,
       orderBy: { createdAt: "desc" },
     });
 
@@ -378,6 +372,13 @@ export async function getNewsletterProductForUser(userId: string) {
       ...product,
       order: order ? { ...order, plan: null } : null,
       paymentStatus: order?.paymentStatus ?? null,
+    };
+  } catch (error) {
+    console.error("Newsletter order lookup failed; continuing without order state.", error);
+    return {
+      ...product,
+      order: null,
+      paymentStatus: null,
     };
   }
 }

@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 
-export function EbookReceiptForm({ ebookSlug }: { ebookSlug: string }) {
+export function EbookReceiptForm({
+  ebookSlug,
+  purchaseType = "SOLO_EBOOK",
+}: {
+  ebookSlug: string;
+  purchaseType?: "SOLO_EBOOK" | "COMMUNITY_BUNDLE";
+}) {
   const [file, setFile] = useState<File | null>(null);
   const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("");
@@ -21,6 +27,7 @@ export function EbookReceiptForm({ ebookSlug }: { ebookSlug: string }) {
     const formData = new FormData();
     formData.append("ebookSlug", ebookSlug);
     formData.append("notes", notes);
+    formData.append("purchaseType", purchaseType);
     formData.append("receipt", file);
 
     const response = await fetch("/api/ebooks/payments", {

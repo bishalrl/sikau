@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 type Props = {
   ebookSlug: string;
   label: string;
+  purchaseType?: "SOLO_EBOOK" | "COMMUNITY_BUNDLE";
   size?: "sm" | "md" | "lg";
   variant?: "primary" | "secondary" | "outline" | "ghost" | "gold";
   className?: string;
@@ -15,6 +16,7 @@ type Props = {
 export function EbookBuyButton({
   ebookSlug,
   label,
+  purchaseType = "SOLO_EBOOK",
   size = "lg",
   variant = "primary",
   className = "",
@@ -27,16 +29,21 @@ export function EbookBuyButton({
     setLoading(true);
     setError("");
 
+    const payHint =
+      purchaseType === "COMMUNITY_BUNDLE"
+        ? `/ebooks/${ebookSlug}/pay?type=community`
+        : `/ebooks/${ebookSlug}/pay?type=solo`;
+
     const response = await fetch("/api/ebooks/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ebookSlug }),
+      body: JSON.stringify({ ebookSlug, purchaseType }),
     });
     const data = await response.json();
     setLoading(false);
 
     if (response.status === 401) {
-      router.push(`/login?callbackUrl=${encodeURIComponent(`/ebooks/${ebookSlug}/pay`)}`);
+      router.push(`/login?callbackUrl=${encodeURIComponent(payHint)}`);
       return;
     }
 
@@ -54,7 +61,7 @@ export function EbookBuyButton({
       return;
     }
 
-    router.push(data.redirectTo ?? `/ebooks/${ebookSlug}/pay`);
+    router.push(data.redirectTo ?? payHint);
   }
 
   return (

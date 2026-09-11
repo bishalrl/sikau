@@ -568,18 +568,26 @@ export async function getManageableBlogPosts() {
 export async function getPublishedEbooks(userId?: string) {
   return safeQuery(async () => {
     const records = await prisma.ebook.findMany({
-      where: { status: "PUBLISHED" },
+      where: {
+        status: "PUBLISHED",
+        // Legacy second SKU retired — community is now an offer on the parent ebook.
+        NOT: { slug: "nepse-trading-community" },
+      },
       select: {
         id: true,
         slug: true,
         title: true,
         titleNe: true,
+        headline: true,
         description: true,
         content: true,
         coverImage: true,
         filePath: true,
         priceNpr: true,
         isFree: true,
+        communityOfferEnabled: true,
+        communityOfferName: true,
+        communityOfferPriceNpr: true,
         paymentQrPath: true,
         paymentInstructions: true,
         status: true,
@@ -595,6 +603,7 @@ export async function getPublishedEbooks(userId?: string) {
     return records.map((ebook) => ({
       ...ebook,
       paymentStatus: Array.isArray(ebook.orders) ? ebook.orders[0]?.paymentStatus ?? null : null,
+      purchaseType: Array.isArray(ebook.orders) ? ebook.orders[0]?.purchaseType ?? null : null,
     }));
   }, fallbackEbooks as never);
 }
@@ -608,19 +617,31 @@ export async function getEbookBySlug(slug: string, userId?: string) {
         slug: true,
         title: true,
         titleNe: true,
+        headline: true,
         description: true,
         content: true,
+        curriculumJson: true,
+        audienceJson: true,
         coverImage: true,
         filePath: true,
         priceNpr: true,
+        listPriceNpr: true,
+        promoEndsAt: true,
         isFree: true,
         paymentQrPath: true,
         paymentInstructions: true,
+        communityOfferEnabled: true,
+        communityOfferName: true,
+        communityOfferPriceNpr: true,
+        communityAccessType: true,
+        communityBenefitsJson: true,
+        communityId: true,
         status: true,
         publishedAt: true,
         createdAt: true,
         updatedAt: true,
         authorId: true,
+        community: { select: { id: true, slug: true, name: true } },
         orders: userId ? { where: { userId } } : false,
         author: { select: { name: true } },
       },
@@ -631,6 +652,7 @@ export async function getEbookBySlug(slug: string, userId?: string) {
     return {
       ...ebook,
       paymentStatus: Array.isArray(ebook.orders) ? ebook.orders[0]?.paymentStatus ?? null : null,
+      purchaseType: Array.isArray(ebook.orders) ? ebook.orders[0]?.purchaseType ?? null : null,
       order: Array.isArray(ebook.orders) ? ebook.orders[0] ?? null : null,
     };
   }, (fallbackEbooks.find((item) => item.slug === slug) as never) ?? null);
@@ -639,7 +661,10 @@ export async function getEbookBySlug(slug: string, userId?: string) {
 export async function getManageableEbooks() {
   return safeQuery(async () => {
     return prisma.ebook.findMany({
-      include: { author: { select: { name: true, email: true } } },
+      include: {
+        author: { select: { name: true, email: true } },
+        community: { select: { id: true, slug: true, name: true } },
+      },
       orderBy: { updatedAt: "desc" },
     });
   }, [] as never);

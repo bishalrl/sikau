@@ -1,14 +1,16 @@
 import { ContentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export const SITE_EBOOK_SLUGS = ["nepse-trading-guide", "nepse-trading-community"] as const;
+/** Canonical NEPSE guide slug (community is an offer on this ebook, not a second SKU). */
+export const CANONICAL_NEPSE_EBOOK_SLUG = "nepse-trading-guide";
+export const LEGACY_NEPSE_BUNDLE_SLUG = "nepse-trading-community";
 
-/** Keep the live /ebooks packages buyable even if an admin save left them as Draft. */
+/** Keep the primary NEPSE guide published. */
 export async function ensureSiteEbooksPublished() {
   try {
     await prisma.ebook.updateMany({
       where: {
-        slug: { in: [...SITE_EBOOK_SLUGS] },
+        slug: CANONICAL_NEPSE_EBOOK_SLUG,
         status: { not: ContentStatus.PUBLISHED },
       },
       data: {
@@ -16,7 +18,16 @@ export async function ensureSiteEbooksPublished() {
         publishedAt: new Date(),
       },
     });
+
+    // Hide legacy second SKU from the catalog once the offer lives on the guide.
+    await prisma.ebook.updateMany({
+      where: { slug: LEGACY_NEPSE_BUNDLE_SLUG },
+      data: { status: ContentStatus.DRAFT },
+    });
   } catch (error) {
     console.error("ensureSiteEbooksPublished failed:", error);
   }
 }
+
+/** @deprecated Use CANONICAL_NEPSE_EBOOK_SLUG */
+export const SITE_EBOOK_SLUGS = [CANONICAL_NEPSE_EBOOK_SLUG, LEGACY_NEPSE_BUNDLE_SLUG] as const;

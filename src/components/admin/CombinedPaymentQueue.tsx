@@ -10,6 +10,7 @@ type EbookOrderItem = {
   id: string;
   amount: number;
   currency: string;
+  purchaseType?: "SOLO_EBOOK" | "COMMUNITY_BUNDLE";
   receiptPath: string | null;
   notes: string | null;
   ebook: { title: string };
@@ -90,6 +91,7 @@ export function CombinedPaymentQueue({
                 </p>
                 <p className="mt-1 text-sm text-on-surface-variant">
                   {order.currency} {order.amount.toLocaleString()}
+                  {order.purchaseType === "COMMUNITY_BUNDLE" ? " · Community bundle" : " · Ebook only"}
                 </p>
               </div>
               {order.receiptPath && (

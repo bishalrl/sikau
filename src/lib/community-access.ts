@@ -1,6 +1,7 @@
 import {
   CommunityMemberRole,
   CommunityStatus,
+  EbookPurchaseType,
   PaymentStatus,
   type CommunityMember,
 } from "@prisma/client";
@@ -62,7 +63,7 @@ export function memberCanSend(
   return canUse(permissions[kind], role);
 }
 
-/** Upsert membership for every community linked to an approved ebook order. */
+/** Upsert membership for communities granted by an approved community-bundle ebook order. */
 export async function ensureCommunityMembershipsForEbookOrder(orderId: string) {
   const order = await prisma.ebookOrder.findUnique({
     where: { id: orderId },
@@ -70,12 +71,30 @@ export async function ensureCommunityMembershipsForEbookOrder(orderId: string) {
       id: true,
       userId: true,
       ebookId: true,
+      purchaseType: true,
       paymentStatus: true,
+      ebook: {
+        select: {
+          communityId: true,
+          communityOfferEnabled: true,
+        },
+      },
     },
   });
 
   if (!order || order.paymentStatus !== PaymentStatus.APPROVED) {
     return [];
+  }
+
+  // Solo ebook purchases never unlock community access.
+  if (order.purchaseType !== EbookPurchaseType.COMMUNITY_BUNDLE) {
+    return [];
+  }
+
+  const communityIds = new Set<string>();
+
+  if (order.ebook.communityOfferEnabled && order.ebook.communityId) {
+    communityIds.add(order.ebook.communityId);
   }
 
   const links = await prisma.communityEbookLink.findMany({
@@ -85,13 +104,22 @@ export async function ensureCommunityMembershipsForEbookOrder(orderId: string) {
     },
     select: { communityId: true },
   });
+  for (const link of links) {
+    communityIds.add(link.communityId);
+  }
 
   const members = [];
-  for (const link of links) {
+  for (const communityId of communityIds) {
+    const community = await prisma.community.findFirst({
+      where: { id: communityId, status: CommunityStatus.ACTIVE },
+      select: { id: true },
+    });
+    if (!community) continue;
+
     const existing = await prisma.communityMember.findUnique({
       where: {
         communityId_userId: {
-          communityId: link.communityId,
+          communityId,
           userId: order.userId,
         },
       },
@@ -104,13 +132,13 @@ export async function ensureCommunityMembershipsForEbookOrder(orderId: string) {
     const member = await prisma.communityMember.upsert({
       where: {
         communityId_userId: {
-          communityId: link.communityId,
+          communityId,
           userId: order.userId,
         },
       },
       update: {},
       create: {
-        communityId: link.communityId,
+        communityId,
         userId: order.userId,
         role: CommunityMemberRole.MEMBER,
       },

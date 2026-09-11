@@ -74,6 +74,11 @@ enum ReviewType {
   EBOOK
 }
 
+enum EbookPurchaseType {
+  SOLO_EBOOK
+  COMMUNITY_BUNDLE
+}
+
 model User {
   id                 String            @id @default(cuid())
   name               String?
@@ -263,50 +268,69 @@ model BlogPost {
 }
 
 model Ebook {
-  id                  String        @id @default(cuid())
-  slug                String        @unique
-  title               String
-  titleNe             String?
-  description         String
-  content             String        @default("")
-  coverImage          String?
-  filePath            String?
-  priceNpr            Int           @default(0)
-  listPriceNpr        Int?
-  promoEndsAt         DateTime?
-  isFree              Boolean       @default(true)
-  paymentQrPath       String?
-  paymentInstructions String?
-  status              ContentStatus @default(DRAFT)
-  publishedAt         DateTime?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  authorId            String
-  author              User          @relation("EbookAuthor", fields: [authorId], references: [id], onDelete: Restrict)
-  orders              EbookOrder[]
-  communityLinks      CommunityEbookLink[]
+  id                      String        @id @default(cuid())
+  slug                    String        @unique
+  title                   String
+  titleNe                 String?
+  /// Optional hero headline; falls back to title when empty
+  headline                String?
+  description             String
+  content                 String        @default("")
+  /// JSON array: [{ "phase"?: string, "title": string, "detail": string }]
+  curriculumJson          String        @default("[]")
+  /// JSON string array of audience bullets
+  audienceJson            String        @default("[]")
+  coverImage              String?
+  filePath                String?
+  /// Solo ebook price (NPR)
+  priceNpr                Int           @default(0)
+  listPriceNpr            Int?
+  promoEndsAt             DateTime?
+  isFree                  Boolean       @default(true)
+  paymentQrPath           String?
+  paymentInstructions     String?
+  communityOfferEnabled   Boolean       @default(false)
+  communityOfferName      String?
+  communityOfferPriceNpr  Int?
+  /// LIFETIME | MONTHLY | QUARTERLY | SEMIANNUAL | YEARLY
+  communityAccessType     String?
+  /// JSON string array of benefit bullets
+  communityBenefitsJson   String        @default("[]")
+  communityId             String?
+  status                  ContentStatus @default(DRAFT)
+  publishedAt             DateTime?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  authorId                String
+  author                  User          @relation("EbookAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  community               Community?    @relation("EbookCommunityOffer", fields: [communityId], references: [id], onDelete: SetNull)
+  orders                  EbookOrder[]
+  communityLinks          CommunityEbookLink[]
 
   @@index([status, publishedAt])
+  @@index([communityId])
 }
 
 model EbookOrder {
-  id            String        @id @default(cuid())
+  id            String            @id @default(cuid())
   userId        String
   ebookId       String
-  amount        Int           @default(0)
-  currency      String        @default("NPR")
-  paymentStatus PaymentStatus @default(PENDING)
+  purchaseType  EbookPurchaseType @default(SOLO_EBOOK)
+  amount        Int               @default(0)
+  currency      String            @default("NPR")
+  paymentStatus PaymentStatus     @default(PENDING)
   receiptPath   String?
   notes         String?
   reviewedById  String?
   reviewedAt    DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ebook         Ebook         @relation(fields: [ebookId], references: [id], onDelete: Cascade)
-  reviewedBy    User?         @relation("EbookOrderReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ebook         Ebook             @relation(fields: [ebookId], references: [id], onDelete: Cascade)
+  reviewedBy    User?             @relation("EbookOrderReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@unique([userId, ebookId])
+  @@index([paymentStatus, createdAt])
 }
 
 model LiveSession {
@@ -426,6 +450,7 @@ model Community {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   ebookLinks  CommunityEbookLink[]
+  offerEbooks Ebook[]         @relation("EbookCommunityOffer")
   members     CommunityMember[]
   messages    CommunityMessage[]
   announcements CommunityAnnouncement[]

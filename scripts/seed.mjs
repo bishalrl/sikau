@@ -230,6 +230,18 @@ Start with a small monthly SIP you can continue for 12 months without stress.`,
   await prisma.ebook.upsert({
     where: { slug: "sip-action-plan" },
     update: {
+      description: "A paid guide with ready-to-use SIP target tables and monthly checklists.",
+      curriculumJson: JSON.stringify([
+        { phase: "Phase 1", title: "Find your surplus", detail: "Decide your monthly investable surplus." },
+        { phase: "Phase 2", title: "Pick funds", detail: "Choose 1–2 diversified funds." },
+        { phase: "Phase 3", title: "Automate", detail: "Automate the SIP date with your salary cycle." },
+      ]),
+      audienceJson: JSON.stringify([
+        "Salary earners starting SIPs",
+        "Anyone who wants a simple monthly investing system",
+      ]),
+      communityOfferEnabled: false,
+      communityId: null,
       content: `## SIP Action Plan
 
 Use this ebook after unlocking paid access.
@@ -260,6 +272,15 @@ Choose 1–2 diversified funds.
 
 ### Step 3
 Automate the SIP date with your salary cycle.`,
+      curriculumJson: JSON.stringify([
+        { phase: "Phase 1", title: "Find your surplus", detail: "Decide your monthly investable surplus." },
+        { phase: "Phase 2", title: "Pick funds", detail: "Choose 1–2 diversified funds." },
+        { phase: "Phase 3", title: "Automate", detail: "Automate the SIP date with your salary cycle." },
+      ]),
+      audienceJson: JSON.stringify([
+        "Salary earners starting SIPs",
+        "Anyone who wants a simple monthly investing system",
+      ]),
       coverImage: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=800&fit=crop",
       filePath: null,
       priceNpr: 499,

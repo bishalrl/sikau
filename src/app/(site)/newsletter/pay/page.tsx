@@ -43,25 +43,50 @@ export default async function NewsletterPayPage({ searchParams }: Props) {
     ? await getNewsletterPlanByCode(product.id, planParam)
     : null;
   const plan =
-    (planFromQuery?.isActive ? planFromQuery : null) ??
+    (planFromQuery?.isActive !== false && planFromQuery ? planFromQuery : null) ??
     product.order?.plan ??
     product.plans[0] ??
     null;
 
-  if (plan && product.order && product.order.planId !== plan.id) {
-    await prisma.newsletterOrder.update({
-      where: { id: product.order.id },
-      data: { planId: plan.id, amount: plan.priceNpr },
-    });
-  } else if (plan && !product.order) {
-    await prisma.newsletterOrder.create({
-      data: {
-        userId: session.user.id,
-        productId: product.id,
-        planId: plan.id,
-        amount: plan.priceNpr,
-      },
-    });
+  if (plan) {
+    try {
+      if (product.order) {
+        await prisma.newsletterOrder.update({
+          where: { id: product.order.id },
+          data: { planId: plan.id, amount: plan.priceNpr },
+        });
+      } else {
+        await prisma.newsletterOrder.create({
+          data: {
+            userId: session.user.id,
+            productId: product.id,
+            planId: plan.id.startsWith("fallback-") ? null : plan.id,
+            amount: plan.priceNpr,
+          },
+        });
+      }
+    } catch (error) {
+      // Older DBs may not have planId yet — still show the pay UI with the plan amount.
+      console.error("Unable to sync newsletter order plan (run prisma db push):", error);
+      try {
+        if (product.order) {
+          await prisma.newsletterOrder.update({
+            where: { id: product.order.id },
+            data: { amount: plan.priceNpr },
+          });
+        } else {
+          await prisma.newsletterOrder.create({
+            data: {
+              userId: session.user.id,
+              productId: product.id,
+              amount: plan.priceNpr,
+            },
+          });
+        }
+      } catch (innerError) {
+        console.error("Unable to sync newsletter order amount:", innerError);
+      }
+    }
   }
 
   const amount = plan?.priceNpr ?? product.order?.amount ?? product.priceNpr;

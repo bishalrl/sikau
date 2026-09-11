@@ -1,28 +1,35 @@
-import NepseEbookLanding from "@/components/ebooks/NepseEbookLanding";
-import { PublishedEbooksCatalog } from "@/components/ebooks/PublishedEbooksCatalog";
-import { SITE_EBOOK_SLUGS, ensureSiteEbooksPublished } from "@/lib/ebooks";
-import {
-  getNepseLandingEbookPricing,
-  getPublishedEbooks,
-} from "@/lib/repositories";
+import { EbookLibrary } from "@/components/ebooks/EbookLibrary";
+import { ensureSiteEbooksPublished } from "@/lib/ebooks";
+import { getPublishedEbooks } from "@/lib/repositories";
 import { getCurrentSession } from "@/lib/session";
 
 export default async function EbooksPage() {
   const session = await getCurrentSession();
   await ensureSiteEbooksPublished();
-
-  const [pricingRows, published] = await Promise.all([
-    getNepseLandingEbookPricing(),
-    getPublishedEbooks(session?.user.id),
-  ]);
-
-  const siteSlugSet = new Set<string>(SITE_EBOOK_SLUGS);
-  const extraEbooks = published.filter((ebook) => !siteSlugSet.has(ebook.slug));
+  const ebooks = await getPublishedEbooks(session?.user.id);
 
   return (
-    <>
-      <NepseEbookLanding pricingRows={pricingRows} />
-      <PublishedEbooksCatalog ebooks={extraEbooks} />
-    </>
+    <EbookLibrary
+      ebooks={ebooks.map((ebook) => ({
+        id: ebook.id,
+        slug: ebook.slug,
+        title: ebook.title,
+        titleNe: ebook.titleNe,
+        description: ebook.description,
+        coverImage: ebook.coverImage,
+        priceNpr: ebook.priceNpr,
+        isFree: ebook.isFree,
+        communityOfferEnabled: Boolean(
+          "communityOfferEnabled" in ebook ? ebook.communityOfferEnabled : false,
+        ),
+        communityOfferName:
+          "communityOfferName" in ebook ? (ebook.communityOfferName as string | null) : null,
+        communityOfferPriceNpr:
+          "communityOfferPriceNpr" in ebook
+            ? (ebook.communityOfferPriceNpr as number | null)
+            : null,
+        paymentStatus: ebook.paymentStatus,
+      }))}
+    />
   );
 }
