@@ -77,13 +77,15 @@ export function EbookProductDetail({ ebook }: Props) {
                   label={hasBundle ? "Open ebook" : "Start reading"}
                   purchaseType="SOLO_EBOOK"
                   alreadyUnlocked
+                  isFree={ebook.isFree || ebook.priceNpr <= 0}
                   className="nepse-hero__cta-btn"
                 />
               ) : (
                 <EbookBuyButton
                   ebookSlug={ebook.slug}
-                  label={ebook.isFree ? "Read free ebook" : "Get the Ebook"}
+                  label={ebook.isFree || ebook.priceNpr <= 0 ? "Read free ebook" : "Get the Ebook"}
                   purchaseType="SOLO_EBOOK"
+                  isFree={ebook.isFree || ebook.priceNpr <= 0}
                   className="nepse-hero__cta-btn"
                 />
               )}
@@ -183,12 +185,13 @@ export function EbookProductDetail({ ebook }: Props) {
                 label={
                   approved
                     ? "Open ebook"
-                    : ebook.isFree
+                    : ebook.isFree || ebook.priceNpr <= 0
                       ? "Read Free Ebook"
                       : "Get the Ebook"
                 }
                 purchaseType="SOLO_EBOOK"
                 alreadyUnlocked={approved}
+                isFree={ebook.isFree || ebook.priceNpr <= 0}
               />
             </article>
 

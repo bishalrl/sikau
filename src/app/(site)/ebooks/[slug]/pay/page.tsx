@@ -46,8 +46,9 @@ export default async function EbookPayPage({ params, searchParams }: Props) {
     redirect(`/ebooks/${ebook.slug}/read`);
   }
 
-  if (ebook.isFree && purchaseType === "SOLO_EBOOK") {
-    redirect(`/ebooks/${ebook.slug}`);
+  // Free solo ebooks never use the payment page — unlock and open reader.
+  if ((ebook.isFree || ebook.priceNpr <= 0) && purchaseType === "SOLO_EBOOK") {
+    redirect(`/ebooks/${ebook.slug}/read`);
   }
 
   const amount = resolvePurchaseAmount(ebook as never, purchaseType);

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { EbookProductDetail } from "@/components/ebooks/EbookProductDetail";
 import {
@@ -23,8 +24,25 @@ export default async function EbookDetailPage({
   await ensureSiteEbooksPublished();
   const ebook = await getEbookBySlug(slug, session?.user.id);
 
-  if (!ebook || ebook.status !== "PUBLISHED") {
+  if (!ebook) {
     notFound();
+  }
+
+  if (ebook.status !== "PUBLISHED") {
+    return (
+      <div className="site-container py-xl">
+        <h1 className="font-display-md text-on-background">{ebook.title}</h1>
+        <p className="mt-3 text-on-surface-variant">
+          This ebook is saved as <strong>Draft</strong>, so the public page is not live yet.
+        </p>
+        <p className="mt-2 text-sm text-on-surface-variant">
+          In Admin → Ebooks, open it and set Status to <strong>Published</strong> (or click Publish).
+        </p>
+        <Link href="/ebooks" className="mt-6 inline-block text-sm font-medium text-primary">
+          ← Back to ebooks
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -57,7 +75,10 @@ export default async function EbookDetailPage({
             : "[]",
         paymentStatus: ebook.paymentStatus,
         purchaseType: "purchaseType" in ebook ? (ebook.purchaseType as string | null) : null,
-        community: "community" in ebook ? (ebook.community as { id: string; slug: string; name: string } | null) : null,
+        community:
+          "community" in ebook
+            ? (ebook.community as { id: string; slug: string; name: string } | null)
+            : null,
       }}
     />
   );

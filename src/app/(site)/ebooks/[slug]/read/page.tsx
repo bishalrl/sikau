@@ -32,7 +32,8 @@ export default async function EbookReadPage({
     notFound();
   }
 
-  const unlocked = ebook.isFree || ebook.paymentStatus === "APPROVED";
+  const unlocked =
+    ebook.isFree || ebook.priceNpr <= 0 || ebook.paymentStatus === "APPROVED";
   if (!unlocked) {
     redirect(`/ebooks/${ebook.slug}/pay?type=solo`);
   }

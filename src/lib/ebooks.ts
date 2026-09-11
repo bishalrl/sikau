@@ -6,8 +6,9 @@ export const CANONICAL_NEPSE_EBOOK_SLUG = "nepse-trading-guide";
 export const LEGACY_NEPSE_BUNDLE_SLUG = "nepse-trading-community";
 
 /**
- * Keep the primary NEPSE guide published and hide the legacy community SKU.
- * Does NOT recreate deleted catalog ebooks — that blocked admin deletes.
+ * If the canonical NEPSE guide exists, keep it published.
+ * Does not recreate deleted ebooks or force-draft other products
+ * (that was breaking admin re-uploads / deletes).
  */
 export async function ensureSiteEbooksPublished() {
   try {
@@ -21,15 +22,18 @@ export async function ensureSiteEbooksPublished() {
         publishedAt: new Date(),
       },
     });
-
-    // Hide legacy second SKU from the catalog once the offer lives on the guide.
-    await prisma.ebook.updateMany({
-      where: { slug: LEGACY_NEPSE_BUNDLE_SLUG },
-      data: { status: ContentStatus.DRAFT },
-    });
   } catch (error) {
     console.error("ensureSiteEbooksPublished failed:", error);
   }
+}
+
+export function slugifyEbookTitle(title: string) {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
 }
 
 /** @deprecated Use CANONICAL_NEPSE_EBOOK_SLUG */

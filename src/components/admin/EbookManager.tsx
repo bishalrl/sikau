@@ -125,6 +125,15 @@ function textToCurriculumJson(text: string) {
   return JSON.stringify(items);
 }
 
+function slugify(title: string) {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
 export function EbookManager({
   ebooks,
   communities,
@@ -363,6 +372,15 @@ export function EbookManager({
           >
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">{ebook.status}</p>
+              {ebook.isFree || ebook.priceNpr <= 0 ? (
+                <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-900">
+                  Free · no payment
+                </span>
+              ) : (
+                <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-semibold text-emerald-900">
+                  Paid · payment page
+                </span>
+              )}
               {ebook.communityOfferEnabled && (
                 <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
                   Community offer
@@ -371,7 +389,7 @@ export function EbookManager({
             </div>
             <h3 className="mt-2 font-headline-md text-on-background">{ebook.title}</h3>
             <p className="mt-1 text-xs text-on-surface-variant">
-              <code>{ebook.slug}</code>
+              <code>/ebooks/{ebook.slug}</code>
             </p>
             <p className="mt-1 text-sm text-on-surface-variant">
               Solo: {ebook.isFree ? "Free" : `NPR ${ebook.priceNpr.toLocaleString()}`}
@@ -413,8 +431,34 @@ export function EbookManager({
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Title" value={form.title} onChange={(value) => setForm({ ...form, title: value })} />
-          <Field label="Slug" value={form.slug} onChange={(value) => setForm({ ...form, slug: value })} />
+          <Field
+            label="Title"
+            value={form.title}
+            onChange={(value) =>
+              setForm((prev) => ({
+                ...prev,
+                title: value,
+                // Auto-fill slug only while creating a new ebook.
+                slug: prev.id ? prev.slug : slugify(value),
+              }))
+            }
+          />
+          <label className="block text-sm font-medium text-on-background">
+            Slug (public URL)
+            <input
+              value={form.slug}
+              onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) || e.target.value })}
+              onBlur={() => setForm((prev) => ({ ...prev, slug: slugify(prev.slug) }))}
+              className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-surface-container-lowest px-4 py-3"
+              required
+            />
+            {form.slug ? (
+              <p className="mt-1 text-xs text-on-surface-variant">
+                Public page: <code>/ebooks/{form.slug}</code>
+                {form.status !== "PUBLISHED" ? " (draft — not live until Published)" : ""}
+              </p>
+            ) : null}
+          </label>
           <Field
             label="Nepali title"
             value={form.titleNe}
@@ -469,6 +513,11 @@ export function EbookManager({
 
         <div className="rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 p-4 space-y-4">
           <h3 className="font-headline-sm text-on-background">Ebook pricing</h3>
+          <p className="text-sm text-on-surface-variant">
+            <strong>Free</strong> = buyers skip payment and open the reader.
+            <br />
+            <strong>Paid</strong> = uncheck Free, set price &gt; 0 → buyers go to the payment / receipt page.
+          </p>
           <div className="grid gap-4 md:grid-cols-3">
             <label className="block text-sm font-medium">
               Solo ebook price (NPR)
@@ -476,9 +525,18 @@ export function EbookManager({
                 type="number"
                 min={0}
                 value={form.priceNpr}
-                onChange={(e) => setForm({ ...form, priceNpr: e.target.value })}
+                onChange={(e) => {
+                  const priceNpr = e.target.value;
+                  const numeric = Number(priceNpr);
+                  setForm({
+                    ...form,
+                    priceNpr,
+                    isFree: !Number.isFinite(numeric) || numeric <= 0 ? form.isFree : false,
+                  });
+                }}
                 className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3"
                 required
+                disabled={form.isFree}
               />
             </label>
             <label className="block text-sm font-medium">
@@ -489,17 +547,34 @@ export function EbookManager({
                 value={form.listPriceNpr}
                 onChange={(e) => setForm({ ...form, listPriceNpr: e.target.value })}
                 className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3"
+                disabled={form.isFree}
               />
             </label>
             <label className="inline-flex items-center gap-2 text-sm font-medium pt-8">
               <input
                 type="checkbox"
                 checked={form.isFree}
-                onChange={(e) => setForm({ ...form, isFree: e.target.checked })}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    isFree: e.target.checked,
+                    priceNpr: e.target.checked ? "0" : form.priceNpr === "0" ? "599" : form.priceNpr,
+                  })
+                }
               />
-              Free ebook
+              Free ebook (no payment)
             </label>
           </div>
+          {form.isFree || Number(form.priceNpr) <= 0 ? (
+            <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              This ebook is Free — the buy button will open the reader, not the payment page.
+            </p>
+          ) : (
+            <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+              Paid ebook — buyers are sent to <code>/ebooks/{form.slug || "…"}/pay</code> to pay and upload a
+              receipt.
+            </p>
+          )}
 
           <label className="inline-flex items-center gap-2 text-sm font-medium text-on-background">
             <input

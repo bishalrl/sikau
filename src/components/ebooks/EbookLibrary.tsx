@@ -66,7 +66,9 @@ export function EbookLibrary({ ebooks }: Props) {
                 </div>
                 <div className="flex flex-1 flex-col p-5">
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="emerald">{ebook.isFree ? "Free" : "Paid"}</Badge>
+                    <Badge variant="emerald">
+                      {ebook.isFree || ebook.priceNpr <= 0 ? "Free" : "Paid"}
+                    </Badge>
                     {ebook.communityOfferEnabled && <Badge>Community offer</Badge>}
                     {ebook.paymentStatus === "APPROVED" && <Badge variant="emerald">Unlocked</Badge>}
                   </div>

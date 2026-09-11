@@ -159,8 +159,33 @@ export async function POST(request: Request) {
       purchaseType === EbookPurchaseType.COMMUNITY_BUNDLE ? "community" : "solo"
     }`;
 
+    // Create/update a pending order so the pay page always has a checkout row.
+    const order = await prisma.ebookOrder.upsert({
+      where: {
+        userId_ebookId: {
+          userId: session.user.id,
+          ebookId: ebook.id,
+        },
+      },
+      update: {
+        amount,
+        purchaseType,
+        ...(existing?.paymentStatus === PaymentStatus.APPROVED
+          ? {}
+          : { paymentStatus: PaymentStatus.PENDING }),
+      },
+      create: {
+        userId: session.user.id,
+        ebookId: ebook.id,
+        amount,
+        purchaseType,
+        paymentStatus: PaymentStatus.PENDING,
+      },
+    });
+
     return NextResponse.json({
-      paymentStatus: existing?.paymentStatus ?? null,
+      orderId: order.id,
+      paymentStatus: order.paymentStatus,
       purchaseType,
       redirectTo: payPath,
       downloadPath: null,

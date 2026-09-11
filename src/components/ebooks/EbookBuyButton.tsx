@@ -10,6 +10,8 @@ type Props = {
   purchaseType?: "SOLO_EBOOK" | "COMMUNITY_BUNDLE";
   /** When true, skip checkout API and open the reader directly. */
   alreadyUnlocked?: boolean;
+  /** Free solo ebooks skip the payment page. */
+  isFree?: boolean;
   size?: "sm" | "md" | "lg";
   variant?: "primary" | "secondary" | "outline" | "ghost" | "gold";
   className?: string;
@@ -20,6 +22,7 @@ export function EbookBuyButton({
   label,
   purchaseType = "SOLO_EBOOK",
   alreadyUnlocked = false,
+  isFree = false,
   size = "lg",
   variant = "primary",
   className = "",
@@ -42,6 +45,9 @@ export function EbookBuyButton({
       purchaseType === "COMMUNITY_BUNDLE"
         ? `/ebooks/${ebookSlug}/pay?type=community`
         : `/ebooks/${ebookSlug}/pay?type=solo`;
+    // Free solo should return to read after login, not the payment page.
+    const loginCallback =
+      isFree && purchaseType === "SOLO_EBOOK" ? readPath : payHint;
 
     try {
       const response = await fetch("/api/ebooks/orders", {
@@ -53,21 +59,21 @@ export function EbookBuyButton({
       setLoading(false);
 
       if (response.status === 401) {
-        router.push(`/login?callbackUrl=${encodeURIComponent(payHint)}`);
+        router.push(`/login?callbackUrl=${encodeURIComponent(loginCallback)}`);
         return;
       }
 
       if (!response.ok) {
         setError(
           response.status === 404
-            ? "This ebook is not published yet. Publish it in Admin → Ebooks."
+            ? "This ebook is not published yet. Open Admin → Ebooks and set Status to Published."
             : (data.error ?? "Unable to continue."),
         );
         return;
       }
 
       if (data.paymentStatus === "APPROVED") {
-        router.push(readPath);
+        router.push(data.redirectTo ?? readPath);
         return;
       }
 
