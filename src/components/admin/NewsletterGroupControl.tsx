@@ -282,12 +282,15 @@ export function NewsletterGroupControl({
           className="w-full rounded-xl border border-outline-variant/50 bg-surface-container-lowest px-4 py-3"
         />
         <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="file"
-            accept="application/pdf,image/*,video/*"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="max-w-full text-sm"
-          />
+          <label className="text-sm font-medium text-on-background">
+            Attach image or PDF
+            <input
+              type="file"
+              accept="application/pdf,image/*,video/*"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              className="mt-1 block max-w-full text-sm"
+            />
+          </label>
           {file && (
             <button type="button" className="text-sm text-on-surface-variant" onClick={() => setFile(null)}>
               Clear file

@@ -382,6 +382,12 @@ model NewsletterProduct {
   title               String
   description         String   @default("")
   priceNpr            Int      @default(0)
+  /// Hero cover on /newsletter (not the ebook cover)
+  coverImage          String?
+  /// Optional sample report PDF shown on the landing page
+  samplePdfPath       String?
+  /// JSON string array of preview image paths
+  previewImagesJson   String   @default("[]")
   paymentQrPath       String?
   paymentInstructions String?
   isActive            Boolean  @default(true)

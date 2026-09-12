@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 import { EbookBuyButton } from "@/components/ebooks/EbookBuyButton";
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
 import {
@@ -10,7 +10,6 @@ import {
   parseBenefits,
   parseCurriculum,
 } from "@/lib/ebook-offer";
-import { SITE_ASSETS } from "@/lib/site-assets";
 
 type EbookDetail = {
   slug: string;
@@ -18,8 +17,11 @@ type EbookDetail = {
   titleNe: string | null;
   headline: string | null;
   description: string;
+  content: string;
   coverImage: string | null;
   priceNpr: number;
+  listPriceNpr: number | null;
+  promoEndsAt: string | null;
   isFree: boolean;
   curriculumJson: string;
   audienceJson: string;
@@ -30,6 +32,7 @@ type EbookDetail = {
   communityBenefitsJson: string;
   paymentStatus: string | null;
   purchaseType: string | null;
+  authorName: string | null;
   community: { id: string; slug: string; name: string } | null;
 };
 
@@ -37,177 +40,146 @@ type Props = {
   ebook: EbookDetail;
 };
 
+function money(value: number) {
+  return `Rs ${value.toLocaleString()}`;
+}
+
 export function EbookProductDetail({ ebook }: Props) {
   const curriculum = parseCurriculum(ebook.curriculumJson);
   const audience = parseAudience(ebook.audienceJson);
   const benefits = parseBenefits(ebook.communityBenefitsJson);
   const hasCommunity = ebookHasCommunityOffer(ebook);
   const approved = ebook.paymentStatus === "APPROVED";
-  const hasBundle =
-    approved && ebook.purchaseType === "COMMUNITY_BUNDLE";
+  const hasBundle = approved && ebook.purchaseType === "COMMUNITY_BUNDLE";
   const communityName = ebook.communityOfferName?.trim() || ebook.community?.name || "Community";
-  const headline =
-    ebook.headline?.trim() ||
-    ebook.title;
+  const free = ebook.isFree || ebook.priceNpr <= 0;
+  const body = ebook.content?.trim() ?? "";
+  const showList = !free && ebook.listPriceNpr != null && ebook.listPriceNpr > ebook.priceNpr;
+  const promo = ebook.promoEndsAt ? new Date(ebook.promoEndsAt) : null;
+  const promoActive = promo && !Number.isNaN(promo.getTime()) && promo.getTime() > Date.now();
+  const soloLabel = approved ? "Start reading" : free ? "Read free ebook" : "Get the ebook";
 
-  const soloFeatures = DEFAULT_SOLO_FEATURES;
   const communityFeatures = [
-    "Everything in Ebook Only",
+    "Everything in the ebook",
     ...benefits,
-    `${accessTypeLabel(ebook.communityAccessType)} community access`,
+    `${accessTypeLabel(ebook.communityAccessType)} access`,
   ];
 
   return (
-    <div className="nepse-landing">
-      <section className="nepse-hero">
-        <div className="nepse-hero__glow" aria-hidden="true" />
-        <div className="site-container nepse-hero__grid">
-          <div className="nepse-hero__copy">
-            <Link href="/ebooks" className="nepse-hero__secondary">
-              ← All ebooks
-            </Link>
-            <p className="nepse-hero__brand mt-4">{ebook.title}</p>
-            <h1 className="nepse-hero__title">{headline}</h1>
-            {ebook.titleNe && <p className="mt-2 text-lg text-primary">{ebook.titleNe}</p>}
-            <p className="nepse-hero__subtitle">{ebook.description}</p>
-            <div className="nepse-hero__cta">
-              {approved ? (
-                <EbookBuyButton
-                  ebookSlug={ebook.slug}
-                  label={hasBundle ? "Open ebook" : "Start reading"}
-                  purchaseType="SOLO_EBOOK"
-                  alreadyUnlocked
-                  isFree={ebook.isFree || ebook.priceNpr <= 0}
-                  className="nepse-hero__cta-btn"
-                />
-              ) : (
-                <EbookBuyButton
-                  ebookSlug={ebook.slug}
-                  label={ebook.isFree || ebook.priceNpr <= 0 ? "Read free ebook" : "Get the Ebook"}
-                  purchaseType="SOLO_EBOOK"
-                  isFree={ebook.isFree || ebook.priceNpr <= 0}
-                  className="nepse-hero__cta-btn"
-                />
-              )}
-              <Link href="#access" className="nepse-hero__secondary">
-                See access options
-              </Link>
-            </div>
-          </div>
-          <div className="nepse-hero__visual">
-            <Image
-              src={ebook.coverImage || SITE_ASSETS.cover}
-              alt={`${ebook.title} cover`}
-              width={900}
-              height={1200}
-              className="nepse-hero__cover"
-              priority
-            />
-          </div>
-        </div>
-      </section>
+    <div className="ebook-detail">
+      <div className="site-container ebook-detail__wrap">
+        <Link href="/ebooks" className="ebook-detail__back">
+          ← All ebooks
+        </Link>
 
-      {curriculum.length > 0 && (
-        <section className="nepse-section">
-          <div className="site-container">
-            <div className="nepse-section__intro">
-              <p className="nepse-eyebrow">Curriculum</p>
-              <h2 className="nepse-heading">What you&apos;ll learn</h2>
-            </div>
-            <ul className="nepse-phases">
-              {curriculum.map((item) => (
-                <li key={`${item.phase}-${item.title}`} className="nepse-phase">
-                  <span className="nepse-phase__number">{item.phase}</span>
-                  <div>
-                    <p className="nepse-phase__label">{item.title}</p>
-                    <p className="nepse-phase__detail">{item.detail}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-      )}
+        <div className="ebook-detail__layout">
+          <figure className="ebook-detail__cover">
+            {ebook.coverImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={ebook.coverImage} alt={`${ebook.title} cover`} />
+            ) : (
+              <div className="ebook-detail__cover-fallback">Cover not added yet</div>
+            )}
+          </figure>
 
-      {audience.length > 0 && (
-        <section className="nepse-section">
-          <div className="site-container">
-            <div className="nepse-section__intro">
-              <p className="nepse-eyebrow">Audience</p>
-              <h2 className="nepse-heading">Who this is for</h2>
-            </div>
-            <ul className="nepse-package__features max-w-2xl">
-              {audience.map((item) => (
-                <li key={item}>
-                  <MaterialIcon name="check_circle" className="text-[18px] text-primary" filled />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-      )}
+          <div>
+            <p className="ebook-detail__eyebrow">Ebook</p>
+            <h1 className="ebook-detail__title">{ebook.title}</h1>
+            {ebook.titleNe && <p className="ebook-detail__ne">{ebook.titleNe}</p>}
+            {ebook.headline?.trim() && ebook.headline.trim() !== ebook.title && (
+              <p className="ebook-detail__headline">{ebook.headline}</p>
+            )}
+            {ebook.description?.trim() && <p className="ebook-detail__lead">{ebook.description}</p>}
 
-      <section id="access" className="nepse-section">
-        <div className="site-container">
-          <div className="nepse-section__intro">
-            <p className="nepse-eyebrow">Pricing</p>
-            <h2 className="nepse-heading">Choose your access</h2>
-            <p className="nepse-lead">
-              {hasCommunity
-                ? "Buy the ebook alone, or unlock this ebook’s community offer."
-                : "Get lifetime reading access to this ebook."}
+            <div className="ebook-detail__meta">
+              {ebook.authorName && <span className="ebook-detail__chip">{ebook.authorName}</span>}
+              <span className="ebook-detail__chip">{free ? "Free" : "Paid"}</span>
+              {approved && <span className="ebook-detail__chip">Unlocked</span>}
+              {hasCommunity && <span className="ebook-detail__chip">Community offer</span>}
+            </div>
+
+            <nav className="ebook-detail__nav" aria-label="On this page">
+              {body && <a href="#about">About</a>}
+              {curriculum.length > 0 && <a href="#learn">What you&apos;ll learn</a>}
+              {audience.length > 0 && <a href="#audience">Who it&apos;s for</a>}
+              <a href="#access">Access</a>
+            </nav>
+
+            {body && (
+              <section id="about" className="ebook-detail__section">
+                <h2>About this ebook</h2>
+                <article className="ebook-detail__copy">
+                  <ReactMarkdown>{body}</ReactMarkdown>
+                </article>
+              </section>
+            )}
+
+            {curriculum.length > 0 && (
+              <section id="learn" className="ebook-detail__section">
+                <h2>What you&apos;ll learn</h2>
+                <ol className="ebook-detail__learn">
+                  {curriculum.map((item, index) => (
+                    <li key={`${item.phase}-${item.title}`}>
+                      <span className="ebook-detail__phase">{item.phase || `Part ${index + 1}`}</span>
+                      <div>
+                        <strong>{item.title}</strong>
+                        {item.detail && <p>{item.detail}</p>}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
+
+            {audience.length > 0 && (
+              <section id="audience" className="ebook-detail__section">
+                <h2>Who this is for</h2>
+                <ul className="ebook-detail__audience">
+                  {audience.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+
+          <aside id="access" className="ebook-detail__buy">
+            <p className="ebook-detail__eyebrow">{free ? "Read now" : "Ebook only"}</p>
+            <p className="ebook-detail__price">
+              {showList && <span className="ebook-detail__was">{money(ebook.listPriceNpr as number)}</span>}
+              {free ? "Free" : money(ebook.priceNpr)}
             </p>
-          </div>
-
-          <div className={`nepse-packages ${hasCommunity ? "" : "max-w-lg"}`}>
-            <article className="nepse-package">
-              <h3 className="nepse-package__name">Ebook Only</h3>
-              <p className="nepse-package__price">
-                {ebook.isFree || ebook.priceNpr <= 0 ? (
-                  <span className="nepse-price__now">Free</span>
-                ) : (
-                  <span className="nepse-price__now">
-                    Rs <span>{ebook.priceNpr.toLocaleString()}</span>
-                  </span>
-                )}
+            {promoActive && (
+              <p className="ebook-detail__offer">
+                Offer ends {promo.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
               </p>
-              <ul className="nepse-package__features">
-                {soloFeatures.map((feature) => (
-                  <li key={feature}>
-                    <MaterialIcon name="check_circle" className="text-[18px] text-primary" filled />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
+            )}
+            <ul className="ebook-detail__features">
+              {DEFAULT_SOLO_FEATURES.map((feature) => (
+                <li key={feature}>
+                  <MaterialIcon name="check_circle" className="text-[18px] text-primary" filled />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4">
               <EbookBuyButton
                 ebookSlug={ebook.slug}
-                label={
-                  approved
-                    ? "Open ebook"
-                    : ebook.isFree || ebook.priceNpr <= 0
-                      ? "Read Free Ebook"
-                      : "Get the Ebook"
-                }
+                label={soloLabel}
                 purchaseType="SOLO_EBOOK"
                 alreadyUnlocked={approved}
-                isFree={ebook.isFree || ebook.priceNpr <= 0}
+                isFree={free}
               />
-            </article>
+            </div>
 
             {hasCommunity && (
-              <article className="nepse-package nepse-package--popular">
-                <span className="nepse-package__badge">Community</span>
-                <h3 className="nepse-package__name">Ebook + {communityName}</h3>
-                <p className="nepse-package__price">
-                  <span className="nepse-price__now">
-                    Rs <span>{(ebook.communityOfferPriceNpr ?? 0).toLocaleString()}</span>
-                  </span>
-                </p>
-                <p className="nepse-package__summary">
+              <div className="ebook-detail__bundle">
+                <p className="ebook-detail__eyebrow">Ebook + {communityName}</p>
+                <p className="ebook-detail__price">{money(ebook.communityOfferPriceNpr ?? 0)}</p>
+                <p className="ebook-detail__lead" style={{ marginTop: 6 }}>
                   {accessTypeLabel(ebook.communityAccessType)} access to {communityName}.
                 </p>
-                <ul className="nepse-package__features">
+                <ul className="ebook-detail__features">
                   {communityFeatures.map((feature) => (
                     <li key={feature}>
                       <MaterialIcon name="check_circle" className="text-[18px] text-primary" filled />
@@ -215,17 +187,37 @@ export function EbookProductDetail({ ebook }: Props) {
                     </li>
                   ))}
                 </ul>
-                <EbookBuyButton
-                  ebookSlug={ebook.slug}
-                  label={hasBundle ? "Open community ebook" : "Join Community"}
-                  purchaseType="COMMUNITY_BUNDLE"
-                  alreadyUnlocked={hasBundle}
-                />
-              </article>
+                <div className="mt-4">
+                  <EbookBuyButton
+                    ebookSlug={ebook.slug}
+                    label={hasBundle ? "Open community ebook" : "Join community"}
+                    purchaseType="COMMUNITY_BUNDLE"
+                    alreadyUnlocked={hasBundle}
+                    variant="secondary"
+                  />
+                </div>
+              </div>
             )}
-          </div>
+          </aside>
         </div>
-      </section>
+      </div>
+
+      <div className="ebook-detail__dock">
+        <div>
+          <p className="ebook-detail__price">{free ? "Free" : money(ebook.priceNpr)}</p>
+          <p className="text-xs text-on-surface-variant">{ebook.title}</p>
+        </div>
+        <div className="min-w-[150px]">
+          <EbookBuyButton
+            ebookSlug={ebook.slug}
+            label={approved ? "Read" : free ? "Read" : "Get ebook"}
+            purchaseType="SOLO_EBOOK"
+            alreadyUnlocked={approved}
+            isFree={free}
+            size="sm"
+          />
+        </div>
+      </div>
     </div>
   );
 }

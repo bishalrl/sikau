@@ -78,6 +78,9 @@ export type NewsletterProductView = {
   title: string;
   description: string;
   priceNpr: number;
+  coverImage: string | null;
+  samplePdfPath: string | null;
+  previewImagesJson: string;
   paymentQrPath: string | null;
   paymentInstructions: string | null;
   isActive: boolean;

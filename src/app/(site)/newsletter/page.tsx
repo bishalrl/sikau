@@ -39,6 +39,16 @@ export default async function NewsletterPage() {
         communitySlug={product.community.slug}
         plans={product.plans ?? []}
         isLoggedIn={Boolean(session?.user)}
+        coverImage={product.coverImage}
+        samplePdfPath={product.samplePdfPath}
+        previewImages={(() => {
+          try {
+            const parsed = JSON.parse(product.previewImagesJson || "[]") as unknown;
+            return Array.isArray(parsed) ? parsed.map(String) : [];
+          } catch {
+            return [];
+          }
+        })()}
       />
     );
   } catch (error) {

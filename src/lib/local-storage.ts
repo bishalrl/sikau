@@ -9,6 +9,7 @@ export const UPLOAD_FOLDERS = [
   "ebooks",
   "blog-covers",
   "community-media",
+  "newsletter",
   "reviews",
 ] as const;
 

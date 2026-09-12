@@ -42,11 +42,43 @@ export async function PATCH(request: Request) {
       const priceNpr = Number(formData.get("priceNpr") ?? product.priceNpr);
       const paymentInstructions = String(formData.get("paymentInstructions") ?? "");
       const isActive = String(formData.get("isActive") ?? "true") === "true";
-      const qr = formData.get("paymentQr");
-
       let paymentQrPath = product.paymentQrPath;
+      let coverImage = product.coverImage;
+      let samplePdfPath = product.samplePdfPath;
+      let previewImages: string[] = [];
+      try {
+        const parsed = JSON.parse(product.previewImagesJson || "[]") as unknown;
+        previewImages = Array.isArray(parsed) ? parsed.map(String) : [];
+      } catch {
+        previewImages = [];
+      }
+
       if (qr instanceof File && qr.size > 0) {
         paymentQrPath = await saveUploadedFile(qr, "payment-qr");
+      }
+
+      const cover = formData.get("coverImage");
+      if (cover instanceof File && cover.size > 0) {
+        coverImage = await saveUploadedFile(cover, "newsletter");
+      }
+
+      const samplePdf = formData.get("samplePdf");
+      if (samplePdf instanceof File && samplePdf.size > 0) {
+        const name = samplePdf.name.toLowerCase();
+        if (!name.endsWith(".pdf")) {
+          return NextResponse.json({ error: "Sample report must be a PDF." }, { status: 400 });
+        }
+        samplePdfPath = await saveUploadedFile(samplePdf, "newsletter");
+      }
+
+      const previewFiles = formData.getAll("previewImages").filter((item) => item instanceof File && item.size > 0);
+      if (previewFiles.length > 0) {
+        const uploaded: string[] = [];
+        for (const file of previewFiles) {
+          if (!(file instanceof File)) continue;
+          uploaded.push(await saveUploadedFile(file, "newsletter"));
+        }
+        previewImages = uploaded.slice(0, 6);
       }
 
       const plansRaw = String(formData.get("plans") ?? "");
@@ -100,6 +132,9 @@ export async function PATCH(request: Request) {
           paymentInstructions: paymentInstructions || null,
           isActive,
           paymentQrPath,
+          coverImage,
+          samplePdfPath,
+          previewImagesJson: JSON.stringify(previewImages),
         },
         include: {
           community: true,
@@ -113,6 +148,7 @@ export async function PATCH(request: Request) {
           name: title,
           description: description || "Paid newsletter updates — members can read only.",
           permissions: NEWSLETTER_COMMUNITY_PERMISSIONS,
+          coverImage: coverImage || null,
         },
       });
 

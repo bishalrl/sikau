@@ -53,8 +53,14 @@ export default async function EbookDetailPage({
         titleNe: ebook.titleNe,
         headline: "headline" in ebook ? (ebook.headline as string | null) : null,
         description: ebook.description,
+        content: "content" in ebook ? String(ebook.content ?? "") : "",
         coverImage: ebook.coverImage,
         priceNpr: ebook.priceNpr,
+        listPriceNpr: "listPriceNpr" in ebook ? (ebook.listPriceNpr as number | null) : null,
+        promoEndsAt:
+          "promoEndsAt" in ebook && ebook.promoEndsAt
+            ? new Date(ebook.promoEndsAt as string | Date).toISOString()
+            : null,
         isFree: ebook.isFree,
         curriculumJson: "curriculumJson" in ebook ? String(ebook.curriculumJson ?? "[]") : "[]",
         audienceJson: "audienceJson" in ebook ? String(ebook.audienceJson ?? "[]") : "[]",
@@ -75,6 +81,10 @@ export default async function EbookDetailPage({
             : "[]",
         paymentStatus: ebook.paymentStatus,
         purchaseType: "purchaseType" in ebook ? (ebook.purchaseType as string | null) : null,
+        authorName:
+          ebook.author && typeof ebook.author === "object" && "name" in ebook.author
+            ? (ebook.author.name as string | null)
+            : null,
         community:
           "community" in ebook
             ? (ebook.community as { id: string; slug: string; name: string } | null)

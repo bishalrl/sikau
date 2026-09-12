@@ -21,12 +21,24 @@ type Product = {
   title: string;
   description: string;
   priceNpr: number;
+  coverImage: string | null;
+  samplePdfPath: string | null;
+  previewImagesJson: string;
   paymentQrPath: string | null;
   paymentInstructions: string | null;
   isActive: boolean;
   community: { id: string; slug: string; name: string };
   plans: PlanRow[];
 };
+
+function parsePreviews(raw: string) {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function NewsletterProductForm({ initial }: { initial: Product }) {
   const [title, setTitle] = useState(initial.title);
@@ -35,6 +47,10 @@ export function NewsletterProductForm({ initial }: { initial: Product }) {
   const [paymentInstructions, setPaymentInstructions] = useState(initial.paymentInstructions ?? "");
   const [isActive, setIsActive] = useState(initial.isActive);
   const [qrFile, setQrFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [previewFiles, setPreviewFiles] = useState<File[]>([]);
+  const [samplePdf, setSamplePdf] = useState<File | null>(null);
+  const previews = parsePreviews(initial.previewImagesJson);
   const [plans, setPlans] = useState(
     initial.plans.map((p) => ({
       id: p.id,
@@ -79,6 +95,11 @@ export function NewsletterProductForm({ initial }: { initial: Product }) {
       ),
     );
     if (qrFile) formData.append("paymentQr", qrFile);
+    if (coverFile) formData.append("coverImage", coverFile);
+    if (samplePdf) formData.append("samplePdf", samplePdf);
+    for (const file of previewFiles) {
+      formData.append("previewImages", file);
+    }
 
     const response = await fetch("/api/admin/newsletter/product", {
       method: "PATCH",
@@ -94,6 +115,9 @@ export function NewsletterProductForm({ initial }: { initial: Product }) {
 
     setMessage("Newsletter product saved.");
     setQrFile(null);
+    setCoverFile(null);
+    setPreviewFiles([]);
+    setSamplePdf(null);
   }
 
   return (
@@ -221,6 +245,77 @@ export function NewsletterProductForm({ initial }: { initial: Product }) {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 p-4 space-y-4">
+        <div>
+          <h3 className="font-headline-sm text-on-background">Landing images &amp; sample PDF</h3>
+          <p className="mt-1 text-sm text-on-surface-variant">
+            These show on /newsletter. The cover is not the ebook image — upload the NEPSE Weekly report cover here.
+          </p>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">Cover image</label>
+          {(coverFile || initial.coverImage) && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coverFile ? URL.createObjectURL(coverFile) : (initial.coverImage ?? "")}
+              alt="Newsletter cover"
+              className="mb-3 max-h-56 rounded-xl border border-outline-variant/30 bg-white object-contain"
+            />
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
+            className="w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">Report preview images (up to 6)</label>
+          {previews.length > 0 && previewFiles.length === 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {previews.map((src) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={src} src={src} alt="" className="h-20 w-16 rounded-lg object-cover" />
+              ))}
+            </div>
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => setPreviewFiles(Array.from(e.target.files ?? []).slice(0, 6))}
+            className="w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3"
+          />
+          {previewFiles.length > 0 && (
+            <p className="mt-1 text-xs text-on-surface-variant">
+              {previewFiles.length} new preview image{previewFiles.length === 1 ? "" : "s"} selected — saving replaces the old previews.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">Sample report PDF</label>
+          {initial.samplePdfPath && !samplePdf && (
+            <a
+              href={initial.samplePdfPath}
+              target="_blank"
+              rel="noreferrer"
+              className="mb-2 inline-block text-sm font-medium text-primary"
+            >
+              View current sample PDF
+            </a>
+          )}
+          <input
+            type="file"
+            accept="application/pdf,.pdf"
+            onChange={(e) => setSamplePdf(e.target.files?.[0] ?? null)}
+            className="w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3"
+          />
         </div>
       </div>
 

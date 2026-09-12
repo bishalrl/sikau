@@ -23,6 +23,9 @@ type Props = {
   communitySlug: string;
   plans: WeeklyPlan[];
   isLoggedIn: boolean;
+  coverImage?: string | null;
+  samplePdfPath?: string | null;
+  previewImages?: string[];
 };
 
 const BENEFITS = [
@@ -53,12 +56,6 @@ const WHAT_YOU_GET = [
     body: "A clear view of what may matter in the week ahead.",
     icon: "event",
   },
-];
-
-const PREVIEWS = [
-  { src: "/images/nepse-weekly/preview-1.jpg", label: "Market summary" },
-  { src: "/images/nepse-weekly/preview-2.jpg", label: "Watchlist" },
-  { src: "/images/nepse-weekly/preview-3.jpg", label: "Outlook" },
 ];
 
 function badgeLabel(badge: string | null) {
@@ -112,6 +109,9 @@ export default function NepseWeeklyLanding({
   communitySlug,
   plans,
   isLoggedIn,
+  coverImage,
+  samplePdfPath,
+  previewImages = [],
 }: Props) {
   const monthly = plans.find((p) => p.code === "MONTHLY") ?? plans[0];
   const startingPrice = monthly?.priceNpr ?? 999;
@@ -158,14 +158,18 @@ export default function NepseWeeklyLanding({
 
           <div className="nepse-hero__visual">
             <div className="nepse-weekly__cover-frame">
-              <Image
-                src={SITE_ASSETS.cover}
-                alt="NEPSE Weekly research report cover"
-                width={900}
-                height={1200}
-                className="nepse-hero__cover"
-                priority
-              />
+              {coverImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={coverImage}
+                  alt="NEPSE Weekly research report cover"
+                  className="nepse-hero__cover"
+                />
+              ) : (
+                <div className="nepse-hero__cover flex items-center justify-center bg-primary/10 p-6 text-center text-sm text-on-surface-variant">
+                  Upload the report cover in Admin → Newsletter
+                </div>
+              )}
               <p className="nepse-weekly__cover-caption">NEPSE WEEKLY · Research Report</p>
             </div>
           </div>
@@ -197,24 +201,29 @@ export default function NepseWeeklyLanding({
             <h2 className="nepse-heading">Inside This Week&apos;s Report</h2>
           </div>
           <div className="nepse-weekly__previews">
-            {PREVIEWS.map((preview) => (
-              <figure key={preview.label} className="nepse-weekly__preview-frame">
+            {(previewImages.length > 0 ? previewImages : []).map((src, index) => (
+              <figure key={`${src}-${index}`} className="nepse-weekly__preview-frame">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preview.src} alt={preview.label} />
-                <figcaption>{preview.label}</figcaption>
+                <img src={src} alt={`Report preview ${index + 1}`} />
+                <figcaption>Preview {index + 1}</figcaption>
               </figure>
             ))}
           </div>
-          <div className="nepse-weekly__preview-cta">
-            <a
-              href={SITE_ASSETS.pdf}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="nepse-weekly__btn nepse-weekly__btn--outline"
-            >
-              View Sample Report
-            </a>
-          </div>
+          {previewImages.length === 0 && (
+            <p className="text-sm text-on-surface-variant">Report previews will appear here after they are uploaded in admin.</p>
+          )}
+          {samplePdfPath && (
+            <div className="nepse-weekly__preview-cta">
+              <a
+                href={samplePdfPath}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="nepse-weekly__btn nepse-weekly__btn--outline"
+              >
+                View Sample Report
+              </a>
+            </div>
+          )}
         </div>
       </section>
 
