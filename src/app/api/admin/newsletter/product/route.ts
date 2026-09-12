@@ -42,6 +42,7 @@ export async function PATCH(request: Request) {
       const priceNpr = Number(formData.get("priceNpr") ?? product.priceNpr);
       const paymentInstructions = String(formData.get("paymentInstructions") ?? "");
       const isActive = String(formData.get("isActive") ?? "true") === "true";
+      const qr = formData.get("paymentQr");
       let paymentQrPath = product.paymentQrPath;
       let coverImage = product.coverImage;
       let samplePdfPath = product.samplePdfPath;
