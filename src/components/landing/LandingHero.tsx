@@ -1,32 +1,50 @@
-import Image from "next/image";
 import Link from "next/link";
+import { CmsImage } from "@/components/cms/CmsImage";
 import { SITE_ASSETS } from "@/lib/site-assets";
 import { MaterialIcon } from "./MaterialIcon";
 
-const HERO_IMAGE = SITE_ASSETS.raju1;
-
-const benefits = [
-  "Learn SIP investing step-by-step",
-  "Understand life & health insurance",
-  "Build long-term wealth with confidence",
-  "Real examples from the Nepali market",
-];
-
-const socialProof = [
-  { value: "45k+", label: "Trusted Nepalis", icon: "groups" },
-  { value: "4.9", label: "Average rating", icon: "star" },
-  { value: "100+", label: "Expert lessons", icon: "school" },
-];
-
 type Props = {
   badge?: string;
-  title?: string;
+  titleLine1?: string;
+  titleLine2?: string;
+  image?: string;
+  imageAlt?: string;
+  primaryCta?: string;
+  primaryHref?: string;
+  secondaryCta?: string;
+  secondaryHref?: string;
   benefits?: string[];
+  stats?: Array<{ value: string; label: string; icon: string }>;
 };
 
-export function LandingHero({ badge, title, benefits: contentBenefits }: Props) {
-  const titleLines = (title ?? "Take Control of\n\nYour Money").split("\n").filter(Boolean);
-  const finalBenefits = contentBenefits?.length ? contentBenefits : benefits;
+export function LandingHero({
+  badge,
+  titleLine1,
+  titleLine2,
+  image,
+  imageAlt,
+  primaryCta,
+  primaryHref,
+  secondaryCta,
+  secondaryHref,
+  benefits = [],
+  stats = [],
+}: Props) {
+  const finalBenefits = benefits.length
+    ? benefits
+    : [
+        "Learn SIP investing step-by-step",
+        "Understand life & health insurance",
+        "Build long-term wealth with confidence",
+        "Real examples from the Nepali market",
+      ];
+  const socialProof = stats.length
+    ? stats
+    : [
+        { value: "45k+", label: "Trusted Nepalis", icon: "groups" },
+        { value: "4.9", label: "Average rating", icon: "star" },
+        { value: "100+", label: "Expert lessons", icon: "school" },
+      ];
 
   return (
     <section className="hero-section relative overflow-hidden py-12 md:py-16 lg:py-20">
@@ -37,12 +55,12 @@ export function LandingHero({ badge, title, benefits: contentBenefits }: Props) 
         <div className="hero-copy reveal active">
           <div className="hero-badge">
             <MaterialIcon name="verified" className="text-[16px]" />
-            {badge ?? "Nepal's Leading Financial Educator"}
+            {badge || "Nepal's Leading Financial Educator"}
           </div>
 
           <h1 className="hero-title">
-            {titleLines[0] ?? "Take Control of"} <br />
-            <span className="text-primary italic">{titleLines[1] ?? "Your Money"}</span>
+            {titleLine1 || "Take Control of"} <br />
+            <span className="text-primary italic">{titleLine2 || "Your Money"}</span>
           </h1>
 
           <div className="hero-social-proof">
@@ -71,26 +89,32 @@ export function LandingHero({ badge, title, benefits: contentBenefits }: Props) 
           </ul>
 
           <div className="hero-cta">
-            <Link href="/ebooks" className="hero-btn-primary">
-              Get the Ebook
+            <Link href={primaryHref || "/ebooks"} className="hero-btn-primary">
+              {primaryCta || "Get the Ebook"}
             </Link>
-            <button type="button" className="hero-btn-secondary">
-              <MaterialIcon name="play_circle" />
-              Watch Free Preview
-            </button>
+            {secondaryHref ? (
+              <Link href={secondaryHref} className="hero-btn-secondary">
+                <MaterialIcon name="play_circle" />
+                {secondaryCta || "Watch Free Preview"}
+              </Link>
+            ) : (
+              <button type="button" className="hero-btn-secondary">
+                <MaterialIcon name="play_circle" />
+                {secondaryCta || "Watch Free Preview"}
+              </button>
+            )}
           </div>
         </div>
 
         {/* Image column */}
         <div className="hero-visual reveal active delay-200">
           <div className="hero-image-wrap">
-            <Image
-              src={HERO_IMAGE}
-              alt="Raju Khatiwada teaching personal finance"
+            <CmsImage
+              src={image || SITE_ASSETS.raju1}
+              alt={imageAlt || "Raju Khatiwada teaching personal finance"}
               width={640}
               height={720}
               className="hero-image"
-              priority
             />
             <div className="hero-image-overlay" aria-hidden="true" />
 

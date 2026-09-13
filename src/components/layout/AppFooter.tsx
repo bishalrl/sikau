@@ -2,9 +2,21 @@ import Link from "next/link";
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
 import { FooterNewsletter } from "./FooterNewsletter";
 
+type LinkItem = { label: string; href: string };
+type SocialItem = { label: string; href: string; icon: string };
+
 type Props = {
   variant?: "dark" | "light";
+  siteName?: string;
   description?: string;
+  copyrightName?: string;
+  quickHeading?: string;
+  quickLinks?: LinkItem[];
+  resourceHeading?: string;
+  resourceLinks?: LinkItem[];
+  legalLinks?: LinkItem[];
+  socialLinks?: SocialItem[];
+  newsletterHeading?: string;
 };
 
 const quickLinks = [
@@ -36,7 +48,23 @@ const socialLinks = [
   { label: "LinkedIn", href: "#", icon: "work" },
 ];
 
-export function AppFooter({ variant = "dark", description }: Props) {
+export function AppFooter({
+  variant = "dark",
+  siteName,
+  description,
+  copyrightName,
+  quickHeading,
+  quickLinks: quickLinksProp,
+  resourceHeading,
+  resourceLinks: resourceLinksProp,
+  legalLinks: legalLinksProp,
+  socialLinks: socialLinksProp,
+  newsletterHeading,
+}: Props) {
+  const quick = quickLinksProp?.length ? quickLinksProp : quickLinks;
+  const resources = resourceLinksProp?.length ? resourceLinksProp : resourceLinks;
+  const legal = legalLinksProp?.length ? legalLinksProp : legalLinks;
+  const social = socialLinksProp?.length ? socialLinksProp : socialLinks;
   const isDark = variant === "dark";
 
   return (
@@ -49,14 +77,14 @@ export function AppFooter({ variant = "dark", description }: Props) {
           {/* Brand */}
           <section className="app-footer__brand" aria-labelledby="footer-brand-title">
             <Link href="/" className="app-footer__logo" id="footer-brand-title">
-              Sikau Paisa
+              {siteName || "Sikau Paisa"}
             </Link>
             <p className="app-footer__description">
               {description ??
                 "Empowering every Nepali household with the right knowledge of money, saving, investing and wealth creation. Founded by Raju Khatiwada."}
             </p>
             <nav className="app-footer__social" aria-label="Social media">
-              {socialLinks.map(({ label, href, icon }) => (
+              {social.map(({ label, href, icon }) => (
                 <a
                   key={label}
                   href={href}
@@ -72,10 +100,10 @@ export function AppFooter({ variant = "dark", description }: Props) {
           {/* Quick Links */}
           <nav className="app-footer__column" aria-labelledby="footer-quick-links">
             <h2 className="app-footer__heading" id="footer-quick-links">
-              Quick Links
+              {quickHeading || "Quick Links"}
             </h2>
             <ul className="app-footer__links">
-              {quickLinks.map((link) => (
+              {quick.map((link) => (
                 <li key={link.label}>
                   <Link href={link.href} className="app-footer__link">
                     {link.label}
@@ -88,10 +116,10 @@ export function AppFooter({ variant = "dark", description }: Props) {
           {/* Resources */}
           <nav className="app-footer__column" aria-labelledby="footer-resources">
             <h2 className="app-footer__heading" id="footer-resources">
-              Resources
+              {resourceHeading || "Resources"}
             </h2>
             <ul className="app-footer__links">
-              {resourceLinks.map((link) => (
+              {resources.map((link) => (
                 <li key={link.label}>
                   <Link href={link.href} className="app-footer__link">
                     {link.label}
@@ -104,7 +132,7 @@ export function AppFooter({ variant = "dark", description }: Props) {
           {/* Newsletter */}
           <section className="app-footer__column" aria-labelledby="footer-newsletter">
             <h2 className="app-footer__heading" id="footer-newsletter">
-              Newsletter
+              {newsletterHeading || "Newsletter"}
             </h2>
             <FooterNewsletter variant={variant} />
           </section>
@@ -112,10 +140,10 @@ export function AppFooter({ variant = "dark", description }: Props) {
 
         <div className="app-footer__bottom">
           <p className="app-footer__copyright">
-            © {new Date().getFullYear()} Sikau Paisa. All rights reserved.
+            © {new Date().getFullYear()} {copyrightName || "Sikau Paisa"}. All rights reserved.
           </p>
           <nav className="app-footer__legal" aria-label="Legal">
-            {legalLinks.map((link) => (
+            {legal.map((link) => (
               <Link key={link.label} href={link.href} className="app-footer__legal-link">
                 {link.label}
               </Link>

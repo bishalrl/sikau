@@ -1,7 +1,21 @@
-import { getWebsiteContentMap } from "@/lib/repositories";
+import { getPublicCms } from "@/lib/cms/public";
 import { AppFooter } from "@/components/layout/AppFooter";
 
 export async function LandingFooter() {
-  const content = await getWebsiteContentMap();
-  return <AppFooter variant="dark" description={content["site.footer.description"]?.markdown} />;
+  const cms = await getPublicCms();
+  return (
+    <AppFooter
+      variant="dark"
+      siteName={cms.site.name}
+      description={cms.site.footerDescription}
+      copyrightName={cms.site.copyrightName}
+      quickHeading={cms.footerQuick.heading}
+      quickLinks={cms.footerQuick.links}
+      resourceHeading={cms.footerResources.heading}
+      resourceLinks={cms.footerResources.links}
+      legalLinks={cms.footerLegal}
+      socialLinks={cms.social}
+      newsletterHeading={cms.footerNewsletterHeading}
+    />
+  );
 }

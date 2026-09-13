@@ -92,6 +92,7 @@ model User {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   websiteContent     WebsiteContent[]  @relation("ContentEditor")
+  cmsEntries         CmsEntry[]        @relation("CmsEditor")
   createdCourses     Course[]          @relation("CourseInstructor")
   reviewedCourses    Course[]          @relation("CourseReviewer")
   enrollments        Enrollment[]
@@ -123,6 +124,28 @@ model WebsiteContent {
   updatedBy   User?         @relation("ContentEditor", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@unique([key, locale])
+}
+
+model CmsEntry {
+  id          String        @id @default(cuid())
+  kind        String
+  key         String
+  parentKey   String?
+  locale      String        @default("en")
+  label       String
+  placement   String
+  groupName   String
+  sortOrder   Int           @default(0)
+  enabled     Boolean       @default(true)
+  status      ContentStatus @default(PUBLISHED)
+  data        Json
+  updatedAt   DateTime      @updatedAt
+  updatedById String?
+  updatedBy   User?         @relation("CmsEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@unique([key, locale])
+  @@index([parentKey, sortOrder])
+  @@index([kind, groupName])
 }
 
 model Course {

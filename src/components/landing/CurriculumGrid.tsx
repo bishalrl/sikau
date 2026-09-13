@@ -15,19 +15,26 @@ const modules = [
 
 const delays = ["delay-100", "delay-150", "delay-200", "delay-250", "delay-300"];
 
-export function CurriculumGrid() {
+type Props = {
+  title?: string;
+  description?: string;
+  modules?: Array<{ icon: string; title: string; description: string }>;
+};
+
+export function CurriculumGrid({ title, description, modules: contentModules }: Props = {}) {
+  const cards = contentModules?.length ? contentModules : modules;
   return (
     <section className="bg-surface py-xl">
       <div className="site-container">
         <div className="reveal active mb-xl text-center">
-          <h2 className="font-display-md text-display-md text-on-background">A Comprehensive Curriculum</h2>
+          <h2 className="font-display-md text-display-md text-on-background">{title || "A Comprehensive Curriculum"}</h2>
           <p className="mx-auto mt-sm max-w-2xl text-on-surface-variant">
-            Master every facet of personal finance with structured, jargon-free modules designed for
-            practical execution.
+            {description ||
+              "Master every facet of personal finance with structured, jargon-free modules designed for practical execution."}
           </p>
         </div>
         <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-5">
-          {modules.map((mod, i) => (
+          {cards.map((mod, i) => (
             <div
               key={mod.title}
               className={`reveal active group rounded-2xl border border-outline-variant/30 bg-white p-md transition-all hover:border-primary/50 hover:shadow-xl ${delays[i % 5]}`}

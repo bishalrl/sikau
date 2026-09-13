@@ -3,10 +3,14 @@ import { Menu, X } from "lucide-react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { SiteNavLinks } from "@/components/layout/SiteNavLinks";
 import { getCurrentSession } from "@/lib/session";
+import { getPublicCms } from "@/lib/cms/public";
 import { SITE_ASSETS } from "@/lib/site-assets";
 
 export async function SiteHeader() {
-  const session = await getCurrentSession();
+  const [session, cms] = await Promise.all([getCurrentSession(), getPublicCms()]);
+  const siteName = cms.site.name || "Sikau Paisa";
+  const tagline = cms.site.tagline || "Learn · Grow · Earn";
+  const logo = cms.site.logo || SITE_ASSETS.logo;
   const isAdmin = session?.user.role === "ADMIN";
   const isInstructor = session?.user.role === "INSTRUCTOR";
 
@@ -16,17 +20,17 @@ export async function SiteHeader() {
         <Link href="/" className="relative z-[62] flex shrink-0 cursor-pointer items-center gap-2">
           <div className="relative h-8 w-8 overflow-hidden rounded-lg bg-white md:h-9 md:w-9 md:rounded-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={SITE_ASSETS.logo} alt="Sikau Paisa" className="h-full w-full object-cover" />
+            <img src={logo} alt={siteName} className="h-full w-full object-cover" />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-on-background md:font-label-md">Sikau Paisa</p>
+            <p className="truncate text-sm font-semibold text-on-background md:font-label-md">{siteName}</p>
             <p className="hidden text-[10px] font-semibold uppercase tracking-wider text-primary sm:block">
-              Learn · Grow · Earn
+              {tagline}
             </p>
           </div>
         </Link>
 
-        <SiteNavLinks className="hidden md:flex" />
+        <SiteNavLinks className="hidden md:flex" links={cms.nav} />
 
         <div className="flex shrink-0 items-center gap-2">
           {session?.user ? (
@@ -56,13 +60,13 @@ export async function SiteHeader() {
               <X className="hidden h-5 w-5 group-open:block" />
             </summary>
             <div className="absolute right-0 z-[70] mt-2 w-60 rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-2 shadow-lg">
-              {[
+              {(cms.nav.length ? cms.nav : [
                 { href: "/", label: "Home" },
                 { href: "/ebooks", label: "Ebook" },
                 { href: "/newsletter", label: "Newsletter" },
                 { href: "/community", label: "Community" },
                 { href: "/blog", label: "Blog" },
-              ].map((link) => (
+              ]).map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}

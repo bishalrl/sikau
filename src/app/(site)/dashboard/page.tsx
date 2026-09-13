@@ -14,11 +14,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { getPublicCms } from "@/lib/cms/public";
 import {
   getDashboardData,
   getUnlockedEbooks,
   getUpcomingLiveSessions,
-  getWebsiteContentMap,
   userHasDashboardAccess,
 } from "@/lib/repositories";
 import { getCurrentSession } from "@/lib/session";
@@ -54,12 +54,13 @@ export default async function DashboardPage() {
     );
   }
 
-  const [{ stats: dashboardStats, courses, recentActivity }, content, liveSessions, ebooks] = await Promise.all([
+  const [{ stats: dashboardStats, courses, recentActivity }, cms, liveSessions, ebooks] = await Promise.all([
     getDashboardData(session.user),
-    getWebsiteContentMap(),
+    getPublicCms(),
     getUpcomingLiveSessions(),
     getUnlockedEbooks(session.user.id),
   ]);
+  const welcome = cms.sections["dashboard.hero"]?.data ?? {};
   const inProgress = courses.filter((c) => c.progress !== undefined && c.progress < 100);
 
   return (
@@ -67,14 +68,13 @@ export default async function DashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Badge variant="emerald" className="mb-2">
-            {content["dashboard.hero.badge"]?.markdown ?? "Your Dashboard"}
+            {welcome.badge || "Your Dashboard"}
           </Badge>
           <h1 className="font-display-md text-display-md text-on-background">
-            {content["dashboard.hero.title"]?.markdown ?? `Welcome back, ${session.user.name ?? "Learner"}!`}
+            {(welcome.title || "Welcome back, Learner!").replace("Learner", session.user.name ?? "Learner")}
           </h1>
           <p className="mt-xs font-body-md text-on-surface-variant">
-            {content["dashboard.hero.description"]?.markdown ??
-              "Continue courses, read your ebooks, and join live sessions when they go on air."}
+            {welcome.description || "Continue courses, read your ebooks, and join live sessions when they go on air."}
           </p>
         </div>
         <Button href="/quiz">

@@ -26,20 +26,35 @@ const modules = [
   },
 ];
 
-export function CurriculumAccordion() {
+type Module = {
+  num: string;
+  title: string;
+  meta: string;
+  summary?: string;
+  lessons?: Array<{ title: string; duration: string }>;
+};
+
+type Props = {
+  title?: string;
+  description?: string;
+  modules?: Module[];
+};
+
+export function CurriculumAccordion({ title, description, modules: contentModules }: Props = {}) {
+  const rows = contentModules?.length ? contentModules : modules;
   return (
     <section className="bg-surface-container py-xl">
       <div className="mx-auto max-w-3xl px-gutter">
         <div className="reveal active mb-xl text-center">
-          <h2 className="font-display-md text-display-md text-on-background">Inside the Masterclass</h2>
-          <p className="mt-sm text-on-surface-variant">7 Depth-Packed Modules. No filler content.</p>
+          <h2 className="font-display-md text-display-md text-on-background">{title || "Inside the Masterclass"}</h2>
+          <p className="mt-sm text-on-surface-variant">{description || "7 Depth-Packed Modules. No filler content."}</p>
         </div>
         <div className="reveal active space-y-md">
-          {modules.map((mod) => (
+          {rows.map((mod, index) => (
             <details
-              key={mod.num}
+              key={mod.num || mod.title}
               className="group overflow-hidden rounded-2xl border border-outline-variant/30 bg-white"
-              open={mod.open}
+              open={index === 0}
             >
               <summary className="flex cursor-pointer list-none items-center justify-between p-md transition-colors hover:bg-surface-container-low [&::-webkit-details-marker]:hidden">
                 <div className="flex items-center gap-md">

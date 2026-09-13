@@ -1,11 +1,11 @@
 import { LearnCourseGrid } from "@/components/learn/LearnCourseGrid";
 import { LearnMasterclassCurriculum } from "@/components/learn/LearnMasterclassCurriculum";
 import { LearnMasterclassFeatured } from "@/components/learn/LearnMasterclassFeatured";
+import { getPublicCms } from "@/lib/cms/public";
 import {
   getCourseBySlug,
   getLearnCategories,
   getPublishedCourses,
-  getWebsiteContentMap,
 } from "@/lib/repositories";
 import { getCurrentSession } from "@/lib/session";
 
@@ -13,11 +13,12 @@ const MASTERCLASS_SLUG = "personal-finance-masterclass";
 
 export default async function LearnPage() {
   const session = await getCurrentSession();
-  const [courses, categories, content] = await Promise.all([
+  const [courses, categories, cms] = await Promise.all([
     getPublishedCourses(session?.user.id),
     getLearnCategories(),
-    getWebsiteContentMap(),
+    getPublicCms(),
   ]);
+  const explore = cms.sections["learn.explore"];
 
   const masterclass =
     courses.find((course) => course.slug === MASTERCLASS_SLUG) ??
@@ -53,9 +54,9 @@ export default async function LearnPage() {
         courses={courses}
         categories={categories}
         copy={{
-          badge: content["learn.explore.badge"]?.markdown,
-          title: content["learn.explore.title"]?.markdown,
-          description: content["learn.explore.description"]?.markdown,
+          badge: explore?.data.badge,
+          title: explore?.data.title,
+          description: explore?.data.description,
         }}
       />
     </div>

@@ -1,12 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { getCurrentSession } from "@/lib/session";
+import { getPublicCms } from "@/lib/cms/public";
+import { CmsImage } from "@/components/cms/CmsImage";
 import { SITE_ASSETS } from "@/lib/site-assets";
 
-const PROFILE_IMAGE = SITE_ASSETS.logo;
-
-const navLinks = [
+const fallbackNav = [
   { href: "/", label: "Home" },
   { href: "/ebooks", label: "Ebook" },
   { href: "/learn", label: "Courses" },
@@ -16,7 +15,10 @@ const navLinks = [
 ];
 
 export async function LandingHeader() {
-  const session = await getCurrentSession();
+  const [session, cms] = await Promise.all([getCurrentSession(), getPublicCms()]);
+  const navLinks = cms.nav.length ? cms.nav : fallbackNav;
+  const siteName = cms.site.name || "Sikau Paisa";
+  const logo = cms.site.logo || SITE_ASSETS.logo;
   const isAdmin = session?.user.role === "ADMIN";
   const isInstructor = session?.user.role === "INSTRUCTOR";
 
@@ -27,7 +29,7 @@ export async function LandingHeader() {
           href="/"
           className="shrink-0 text-lg font-bold tracking-tight text-primary md:font-headline-lg md:text-headline-lg"
         >
-          Sikau Paisa
+          {siteName}
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">
@@ -64,13 +66,7 @@ export async function LandingHeader() {
             </Link>
           )}
           <div className="hidden h-10 w-10 overflow-hidden rounded-full border-2 border-primary/25 bg-secondary-container ring-2 ring-white sm:block">
-            <Image
-              src={PROFILE_IMAGE}
-              alt=""
-              width={40}
-              height={40}
-              className="h-full w-full object-cover"
-            />
+            <CmsImage src={logo} alt="" width={40} height={40} className="h-full w-full object-cover" />
           </div>
         </div>
       </nav>

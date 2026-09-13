@@ -28,7 +28,7 @@ type NavLink = {
 
 const links: NavLink[] = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, description: "Operations at a glance" },
-  { href: "/admin/content", label: "Website Content", icon: ScrollText, description: "Edit site copy" },
+  { href: "/admin/content", label: "Website Content", icon: ScrollText, description: "Pages, images, SEO" },
   { href: "/admin/courses", label: "Courses", icon: BookOpen, description: "Build & publish" },
   { href: "/admin/blogs", label: "Blog", icon: FileText, description: "Articles" },
   { href: "/admin/ebooks", label: "Ebooks", icon: BookOpen, description: "Digital products" },

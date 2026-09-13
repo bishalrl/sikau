@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { getPublicCms } from "@/lib/cms/public";
 import "./globals.css";
 
 const inter = localFont({
@@ -23,11 +24,20 @@ const plusJakarta = localFont({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Sikau Paisa | Fintech Academy",
-  description:
-    "Master personal finance, investing, and digital payments with Nepal's gamified fintech learning platform.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const cms = await getPublicCms();
+  const seo = cms.seo.site;
+  return {
+    title: seo.title || "Sikau Paisa | Fintech Academy",
+    description: seo.description,
+    icons: cms.site.favicon ? { icon: cms.site.favicon } : undefined,
+    openGraph: {
+      title: seo.ogTitle || seo.title,
+      description: seo.ogDescription || seo.description,
+      images: seo.ogImage ? [seo.ogImage] : undefined,
+    },
+  };
+}
 
 export default function RootLayout({
   children,

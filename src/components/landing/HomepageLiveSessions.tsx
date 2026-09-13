@@ -17,6 +17,9 @@ export type HomeLiveSession = {
 type Props = {
   sessions: HomeLiveSession[];
   isLoggedIn: boolean;
+  badge?: string;
+  title?: string;
+  description?: string;
 };
 
 function formatWhen(value: string | Date) {
@@ -26,7 +29,7 @@ function formatWhen(value: string | Date) {
   });
 }
 
-export function HomepageLiveSessions({ sessions, isLoggedIn }: Props) {
+export function HomepageLiveSessions({ sessions, isLoggedIn, badge, title, description }: Props) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -42,10 +45,10 @@ export function HomepageLiveSessions({ sessions, isLoggedIn }: Props) {
     <section className="home-live py-xl" id="live">
       <div className="site-container">
         <div className="mb-lg max-w-2xl">
-          <p className="text-sm font-semibold uppercase tracking-wide text-primary">Live sessions</p>
-          <h2 className="mt-2 font-display-md text-display-md text-on-background">Join a live session</h2>
+          <p className="text-sm font-semibold uppercase tracking-wide text-primary">{badge || "Live sessions"}</p>
+          <h2 className="mt-2 font-display-md text-display-md text-on-background">{title || "Join a live session"}</h2>
           <p className="mt-sm text-on-surface-variant">
-            Upcoming sessions scheduled by the admin. Join opens at the listed date and time once the host goes live.
+            {description || "Upcoming sessions scheduled by the admin. Join opens at the listed date and time once the host goes live."}
           </p>
         </div>
 

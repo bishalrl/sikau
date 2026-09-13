@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { getActiveNewsletterProduct } from "@/lib/newsletter";
 
-export async function HomepageNewsletterSection() {
+type Props = {
+  badge?: string;
+  primaryCta?: string;
+  secondaryCta?: string;
+};
+
+export async function HomepageNewsletterSection({ badge, primaryCta, secondaryCta }: Props = {}) {
   try {
     const product = await getActiveNewsletterProduct();
     if (!product) return null;
@@ -9,7 +15,7 @@ export async function HomepageNewsletterSection() {
     return (
       <section className="site-container py-xl">
         <div className="overflow-hidden rounded-[1.5rem] border border-primary/15 bg-gradient-to-br from-primary/10 via-surface to-surface-container-low p-5 sm:rounded-[2rem] sm:p-8 md:p-12">
-          <p className="text-sm font-bold uppercase tracking-wide text-primary">Newsletter</p>
+          <p className="text-sm font-bold uppercase tracking-wide text-primary">{badge || "Newsletter"}</p>
           <h2 className="mt-3 max-w-2xl font-display-md text-display-md text-on-background">
             {product.title}
           </h2>
@@ -26,13 +32,13 @@ export async function HomepageNewsletterSection() {
               href="/newsletter"
               className="emerald-gradient inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold text-white"
             >
-              Subscribe
+              {primaryCta || "Subscribe"}
             </Link>
             <Link
               href="/login?callbackUrl=%2Fnewsletter"
               className="inline-flex items-center justify-center rounded-xl border border-outline-variant/50 px-6 py-3 text-sm font-semibold text-on-background"
             >
-              Login first
+              {secondaryCta || "Login first"}
             </Link>
           </div>
         </div>

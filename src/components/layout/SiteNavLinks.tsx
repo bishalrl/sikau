@@ -12,12 +12,19 @@ const navLinks = [
   { href: "/blog", label: "Blog" },
 ];
 
-export function SiteNavLinks({ className = "" }: { className?: string }) {
+export function SiteNavLinks({
+  className = "",
+  links,
+}: {
+  className?: string;
+  links?: Array<{ href: string; label: string }>;
+}) {
   const pathname = usePathname();
+  const items = links?.length ? links : navLinks;
 
   return (
     <div className={`flex items-center gap-6 ${className}`}>
-      {navLinks.map((link) => {
+      {items.map((link) => {
         const active =
           link.href === "/"
             ? pathname === "/"

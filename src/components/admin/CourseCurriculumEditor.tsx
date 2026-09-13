@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ChevronDown, ChevronUp, FileText, Plus, Trash2, Video } from "lucide-react";
 import { MarkdownEditor } from "@/components/admin/MarkdownEditor";
 import { Button } from "@/components/ui/Button";
 import { uploadCourseAssetToR2 } from "@/lib/r2-browser-upload";
@@ -53,15 +54,15 @@ function newKey() {
 }
 
 export function createEmptyLesson(partial?: Partial<EditorLesson>): EditorLesson {
-  const title = partial?.title ?? "New lesson";
+  const title = partial?.title ?? "";
   return {
     key: partial?.key ?? newKey(),
     title,
     titleNe: partial?.titleNe ?? "",
     slug: partial?.slug ?? (slugify(title) || "lesson"),
     summary: partial?.summary ?? "",
-    content: partial?.content ?? "## Lesson body\n\nWrite your lesson here.",
-    type: partial?.type ?? "READING",
+    content: partial?.content ?? "",
+    type: partial?.type ?? "VIDEO",
     durationMins: partial?.durationMins ?? 10,
     isPreview: partial?.isPreview ?? false,
     assets: partial?.assets ?? [],
@@ -71,14 +72,24 @@ export function createEmptyLesson(partial?: Partial<EditorLesson>): EditorLesson
 export function createEmptyModule(partial?: Partial<EditorModule>): EditorModule {
   return {
     key: partial?.key ?? newKey(),
-    title: partial?.title ?? "Module 1",
+    title: partial?.title ?? "",
     titleNe: partial?.titleNe ?? "",
     description: partial?.description ?? "",
-    lessons: partial?.lessons?.length ? partial.lessons : [createEmptyLesson({ isPreview: true })],
+    lessons: partial?.lessons?.length ? partial.lessons : [createEmptyLesson()],
   };
 }
 
+function isVideoAsset(asset: EditorAsset) {
+  return asset.kind === "VIDEO" || asset.mimeType.startsWith("video/");
+}
+
+function lessonHasVideo(lesson: EditorLesson) {
+  return lesson.assets.some(isVideoAsset);
+}
+
 export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
+  const [openLesson, setOpenLesson] = useState<string | null>(null);
+  const [showDetails, setShowDetails] = useState<Record<string, boolean>>({});
   const [uploadKey, setUploadKey] = useState("");
   const [uploadPercent, setUploadPercent] = useState(0);
   const [uploadError, setUploadError] = useState("");
@@ -97,7 +108,7 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
             if (lesson.key !== lessonKey) return lesson;
             const next = { ...lesson, ...patch };
             if (patch.title !== undefined && (!lesson.slug || lesson.slug === slugify(lesson.title))) {
-              next.slug = slugify(patch.title) || lesson.slug;
+              next.slug = slugify(patch.title) || lesson.slug || "lesson";
             }
             return next;
           }),
@@ -177,218 +188,250 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
     }
   }
 
+  const lessonCount = modules.reduce((sum, module) => sum + module.lessons.length, 0);
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-headline-md text-on-background">Curriculum</h2>
-          <p className="text-sm text-on-surface-variant">
-            Add modules and lessons visually. Large videos (up to multi‑GB) upload directly to Cloudflare R2.
+          <h2 className="font-headline-md text-on-background">Lessons</h2>
+          <p className="mt-1 text-sm text-on-surface-variant">
+            {lessonCount} {lessonCount === 1 ? "lesson" : "lessons"} in {modules.length}{" "}
+            {modules.length === 1 ? "section" : "sections"}. Add a video, or leave notes if there is no video.
           </p>
         </div>
         <Button
           type="button"
           variant="outline"
-          onClick={() => onChange([...modules, createEmptyModule({ title: `Module ${modules.length + 1}` })])}
+          onClick={() => {
+            const module = createEmptyModule({ title: `Section ${modules.length + 1}` });
+            onChange([...modules, module]);
+            setOpenLesson(module.lessons[0]?.key ?? null);
+          }}
         >
-          Add module
+          <Plus size={16} />
+          Add section
         </Button>
       </div>
 
       {message && <p className="text-sm text-on-surface-variant">{message}</p>}
-      {uploadError && <p className="text-sm text-error">{uploadError}</p>}
+      {uploadError && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{uploadError}</p>}
 
       {modules.map((module, moduleIndex) => (
-        <article key={module.key} className="rounded-3xl border border-outline-variant/30 bg-surface-container-low p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="grid flex-1 gap-3 md:grid-cols-2">
-              <label className="block text-sm font-medium">
-                Module title
-                <input
-                  value={module.title}
-                  onChange={(e) => updateModule(module.key, { title: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3"
-                />
-              </label>
-              <label className="block text-sm font-medium">
-                Module title (Nepali)
-                <input
-                  value={module.titleNe}
-                  onChange={(e) => updateModule(module.key, { titleNe: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3"
-                />
-              </label>
-            </div>
-            <div className="flex gap-2">
-              <Button type="button" size="sm" variant="outline" onClick={() => moveModule(moduleIndex, -1)}>
-                Up
-              </Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => moveModule(moduleIndex, 1)}>
-                Down
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => onChange(modules.filter((item) => item.key !== module.key))}
-                disabled={modules.length <= 1}
-              >
-                Remove
-              </Button>
-            </div>
-          </div>
-
-          <label className="mt-3 block text-sm font-medium">
-            Module description
-            <textarea
-              value={module.description}
-              onChange={(e) => updateModule(module.key, { description: e.target.value })}
-              rows={2}
-              className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3"
+        <article key={module.key} className="overflow-hidden rounded-3xl border border-outline-variant/30 bg-white">
+          <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant/20 bg-surface-container-low/70 px-4 py-3">
+            <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-primary">
+              {moduleIndex + 1}
+            </span>
+            <input
+              value={module.title}
+              onChange={(event) => updateModule(module.key, { title: event.target.value })}
+              placeholder="Section name, e.g. Getting started"
+              className="min-w-0 flex-1 bg-transparent text-base font-semibold text-on-background outline-none placeholder:font-normal placeholder:text-on-surface-variant"
             />
-          </label>
-
-          <div className="mt-5 space-y-4">
-            {module.lessons.map((lesson, lessonIndex) => (
-              <div key={lesson.key} className="rounded-2xl border border-outline-variant/30 bg-white p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-primary">
-                    Lesson {lessonIndex + 1}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => moveLesson(module.key, lessonIndex, -1)}
-                    >
-                      Up
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => moveLesson(module.key, lessonIndex, 1)}
-                    >
-                      Down
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      disabled={module.lessons.length <= 1}
-                      onClick={() =>
-                        updateModule(module.key, {
-                          lessons: module.lessons.filter((item) => item.key !== lesson.key),
-                        })
-                      }
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  <label className="block text-sm font-medium">
-                    Title
-                    <input
-                      value={lesson.title}
-                      onChange={(e) => updateLesson(module.key, lesson.key, { title: e.target.value })}
-                      className="mt-1 w-full rounded-xl border border-outline-variant/50 px-4 py-3"
-                    />
-                  </label>
-                  <label className="block text-sm font-medium">
-                    Slug
-                    <input
-                      value={lesson.slug}
-                      onChange={(e) => updateLesson(module.key, lesson.key, { slug: e.target.value })}
-                      className="mt-1 w-full rounded-xl border border-outline-variant/50 px-4 py-3"
-                    />
-                  </label>
-                  <label className="block text-sm font-medium">
-                    Type
-                    <select
-                      value={lesson.type}
-                      onChange={(e) =>
-                        updateLesson(module.key, lesson.key, {
-                          type: e.target.value as EditorLesson["type"],
-                        })
-                      }
-                      className="mt-1 w-full rounded-xl border border-outline-variant/50 px-4 py-3"
-                    >
-                      <option value="READING">Reading</option>
-                      <option value="VIDEO">Video</option>
-                      <option value="QUIZ">Quiz</option>
-                    </select>
-                  </label>
-                  <label className="block text-sm font-medium">
-                    Duration (minutes)
-                    <input
-                      type="number"
-                      min={1}
-                      value={lesson.durationMins}
-                      onChange={(e) =>
-                        updateLesson(module.key, lesson.key, {
-                          durationMins: Number(e.target.value) || 1,
-                        })
-                      }
-                      className="mt-1 w-full rounded-xl border border-outline-variant/50 px-4 py-3"
-                    />
-                  </label>
-                </div>
-
-                <label className="mt-3 block text-sm font-medium">
-                  Summary
-                  <input
-                    value={lesson.summary}
-                    onChange={(e) => updateLesson(module.key, lesson.key, { summary: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-outline-variant/50 px-4 py-3"
-                  />
-                </label>
-
-                <label className="mt-3 inline-flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={lesson.isPreview}
-                    onChange={(e) => updateLesson(module.key, lesson.key, { isPreview: e.target.checked })}
-                  />
-                  Free preview lesson
-                </label>
-
-                <div className="mt-4">
-                  <p className="mb-2 text-sm font-medium">Lesson content</p>
-                  <MarkdownEditor
-                    value={lesson.content}
-                    onChange={(value) => updateLesson(module.key, lesson.key, { content: value })}
-                  />
-                </div>
-
-                <LessonVideoUpload
-                  assets={lesson.assets}
-                  uploading={uploadKey === lesson.key}
-                  percent={uploadPercent}
-                  onUpload={(file) => uploadAsset(module.key, lesson.key, file)}
-                  onRemove={(index) =>
-                    updateLesson(module.key, lesson.key, {
-                      assets: lesson.assets.filter((_, assetIndex) => assetIndex !== index),
-                    })
-                  }
-                />
-              </div>
-            ))}
+            <button
+              type="button"
+              className="rounded-lg p-2 text-on-surface-variant hover:bg-white"
+              onClick={() => moveModule(moduleIndex, -1)}
+              aria-label="Move section up"
+              disabled={moduleIndex === 0}
+            >
+              <ChevronUp size={16} />
+            </button>
+            <button
+              type="button"
+              className="rounded-lg p-2 text-on-surface-variant hover:bg-white"
+              onClick={() => moveModule(moduleIndex, 1)}
+              aria-label="Move section down"
+              disabled={moduleIndex === modules.length - 1}
+            >
+              <ChevronDown size={16} />
+            </button>
+            <button
+              type="button"
+              className="rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-40"
+              disabled={modules.length <= 1}
+              aria-label="Remove section"
+              onClick={() => {
+                if (!window.confirm("Remove this section and its lessons?")) return;
+                onChange(modules.filter((item) => item.key !== module.key));
+              }}
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
 
-          <div className="mt-4">
+          <div className="space-y-2 p-3">
+            {module.lessons.map((lesson, lessonIndex) => {
+              const open = openLesson === lesson.key;
+              const hasVideo = lessonHasVideo(lesson);
+              return (
+                <div key={lesson.key} className="rounded-2xl border border-outline-variant/25">
+                  <button
+                    type="button"
+                    onClick={() => setOpenLesson(open ? null : lesson.key)}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container text-sm font-semibold text-on-surface-variant">
+                      {lessonIndex + 1}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-on-background">
+                        {lesson.title || "Untitled lesson"}
+                      </span>
+                      <span className="mt-0.5 flex items-center gap-2 text-xs text-on-surface-variant">
+                        {hasVideo ? (
+                          <span className="inline-flex items-center gap-1 text-primary">
+                            <Video size={12} /> Video ready
+                          </span>
+                        ) : (
+                          <span>No video yet</span>
+                        )}
+                        {lesson.isPreview && <span>· Free preview</span>}
+                      </span>
+                    </span>
+                    <ChevronDown size={16} className={`shrink-0 text-on-surface-variant ${open ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {open && (
+                    <div className="space-y-4 border-t border-outline-variant/20 px-4 py-4">
+                      <input
+                        value={lesson.title}
+                        onChange={(event) => updateLesson(module.key, lesson.key, { title: event.target.value })}
+                        placeholder="Lesson title"
+                        className="w-full rounded-xl border border-outline-variant/50 px-4 py-3 text-sm"
+                      />
+
+                      <LessonVideoUpload
+                        assets={lesson.assets}
+                        uploading={uploadKey === lesson.key}
+                        percent={uploadPercent}
+                        onUpload={(file) => uploadAsset(module.key, lesson.key, file)}
+                        onRemove={(index) =>
+                          updateLesson(module.key, lesson.key, {
+                            assets: lesson.assets.filter((_, assetIndex) => assetIndex !== index),
+                          })
+                        }
+                      />
+
+                      <label className="flex items-center gap-2 text-sm text-on-surface-variant">
+                        <input
+                          type="checkbox"
+                          checked={lesson.isPreview}
+                          onChange={(event) =>
+                            updateLesson(module.key, lesson.key, { isPreview: event.target.checked })
+                          }
+                        />
+                        Let anyone watch this lesson before they pay
+                      </label>
+
+                      <button
+                        type="button"
+                        className="text-sm font-medium text-primary"
+                        onClick={() =>
+                          setShowDetails((current) => ({ ...current, [lesson.key]: !current[lesson.key] }))
+                        }
+                      >
+                        {showDetails[lesson.key] ? "Hide extra details" : "Add notes, a PDF, or change the type"}
+                      </button>
+
+                      {showDetails[lesson.key] && (
+                        <div className="space-y-3 rounded-2xl bg-surface-container-low/60 p-4">
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <label className="block text-sm font-medium">
+                              Students do
+                              <select
+                                value={lesson.type}
+                                onChange={(event) =>
+                                  updateLesson(module.key, lesson.key, {
+                                    type: event.target.value as EditorLesson["type"],
+                                  })
+                                }
+                                className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-3 py-2.5"
+                              >
+                                <option value="VIDEO">Watch a video</option>
+                                <option value="READING">Read notes</option>
+                                <option value="QUIZ">Take a quiz</option>
+                              </select>
+                            </label>
+                            <label className="block text-sm font-medium">
+                              Length (minutes)
+                              <input
+                                type="number"
+                                min={1}
+                                value={lesson.durationMins}
+                                onChange={(event) =>
+                                  updateLesson(module.key, lesson.key, {
+                                    durationMins: Number(event.target.value) || 1,
+                                  })
+                                }
+                                className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-3 py-2.5"
+                              />
+                            </label>
+                          </div>
+                          <label className="block text-sm font-medium">
+                            Short summary
+                            <input
+                              value={lesson.summary}
+                              onChange={(event) =>
+                                updateLesson(module.key, lesson.key, { summary: event.target.value })
+                              }
+                              placeholder="One line students see before they start"
+                              className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-3 py-2.5"
+                            />
+                          </label>
+                          <div>
+                            <p className="mb-2 text-sm font-medium">Written notes</p>
+                            <MarkdownEditor
+                              value={lesson.content}
+                              onChange={(value) => updateLesson(module.key, lesson.key, { content: value })}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button type="button" size="sm" variant="outline" onClick={() => moveLesson(module.key, lessonIndex, -1)}>
+                          Move up
+                        </Button>
+                        <Button type="button" size="sm" variant="outline" onClick={() => moveLesson(module.key, lessonIndex, 1)}>
+                          Move down
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-700 hover:bg-red-50"
+                          disabled={module.lessons.length <= 1}
+                          onClick={() => {
+                            if (!window.confirm("Remove this lesson?")) return;
+                            updateModule(module.key, {
+                              lessons: module.lessons.filter((item) => item.key !== lesson.key),
+                            });
+                          }}
+                        >
+                          Remove lesson
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="px-3 pb-3">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() =>
-                updateModule(module.key, {
-                  lessons: [...module.lessons, createEmptyLesson({ title: `Lesson ${module.lessons.length + 1}` })],
-                })
-              }
+              onClick={() => {
+                const lesson = createEmptyLesson({ title: "" });
+                updateModule(module.key, { lessons: [...module.lessons, lesson] });
+                setOpenLesson(lesson.key);
+              }}
             >
+              <Plus size={14} />
               Add lesson
             </Button>
           </div>
@@ -396,10 +439,6 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
       ))}
     </div>
   );
-}
-
-function isVideoAsset(asset: EditorAsset) {
-  return asset.kind === "VIDEO" || asset.mimeType.startsWith("video/");
 }
 
 function LessonVideoUpload({
@@ -415,12 +454,8 @@ function LessonVideoUpload({
   onUpload: (file: File | null) => Promise<void>;
   onRemove: (index: number) => void;
 }) {
-  const videos = assets
-    .map((asset, index) => ({ asset, index }))
-    .filter((item) => isVideoAsset(item.asset));
-  const files = assets
-    .map((asset, index) => ({ asset, index }))
-    .filter((item) => !isVideoAsset(item.asset));
+  const videos = assets.map((asset, index) => ({ asset, index })).filter((item) => isVideoAsset(item.asset));
+  const files = assets.map((asset, index) => ({ asset, index })).filter((item) => !isVideoAsset(item.asset));
   const [preview, setPreview] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -452,41 +487,36 @@ function LessonVideoUpload({
   }, [assets]);
 
   return (
-    <div className="mt-4 space-y-3 rounded-2xl border border-primary/20 bg-primary-container/5 p-4">
-      <div>
-        <p className="text-sm font-semibold text-on-background">Lesson video</p>
-        <p className="mt-1 text-xs text-on-surface-variant">
-          Choose a video file. It uploads to Cloudflare R2 — no URL needed. Large files (2–3 GB) are supported.
-        </p>
-      </div>
-
+    <div className="space-y-3">
       {videos.map(({ asset, index }) => (
-        <div key={`${asset.storagePath}-${index}`} className="space-y-2">
+        <div key={`${asset.storagePath}-${index}`} className="overflow-hidden rounded-2xl border border-outline-variant/30">
           {preview[asset.storagePath] ? (
-            <video
-              controls
-              playsInline
-              className="max-h-64 w-full rounded-xl bg-black"
-              src={preview[asset.storagePath]}
-            />
+            <video controls playsInline className="max-h-56 w-full bg-black" src={preview[asset.storagePath]} />
           ) : (
-            <p className="text-xs text-on-surface-variant">Loading video preview…</p>
+            <p className="px-4 py-6 text-sm text-on-surface-variant">Loading video…</p>
           )}
-          <div className="flex items-center justify-between gap-2 text-sm">
-            <span className="truncate font-medium text-on-background">{asset.label || "Uploaded video"}</span>
-            <Button type="button" size="sm" variant="ghost" onClick={() => onRemove(index)}>
+          <div className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+            <span className="truncate font-medium">{asset.label || "Uploaded video"}</span>
+            <button type="button" className="text-red-700" onClick={() => onRemove(index)}>
               Remove
-            </Button>
+            </button>
           </div>
         </div>
       ))}
 
-      <label className="block text-sm font-medium text-on-background">
-        {videos.length ? "Replace or add another video" : "Upload video"}
+      <label className="flex cursor-pointer flex-col items-center rounded-2xl border border-dashed border-primary/40 bg-primary-container/5 px-4 py-6 text-center">
+        <Video size={22} className="text-primary" />
+        <span className="mt-2 text-sm font-semibold text-on-background">
+          {videos.length ? "Add another video" : "Upload lesson video"}
+        </span>
+        <span className="mt-1 text-xs text-on-surface-variant">
+          Choose a file. Large videos (2–3 GB) upload in the background. No link needed.
+        </span>
         <input
           type="file"
           accept="video/*"
           disabled={uploading}
+          className="sr-only"
           onChange={async (event) => {
             try {
               await onUpload(event.target.files?.[0] ?? null);
@@ -496,19 +526,25 @@ function LessonVideoUpload({
               event.target.value = "";
             }
           }}
-          className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3 text-sm"
         />
       </label>
       {uploading && (
-        <p className="text-sm font-medium text-primary">Uploading to R2… {percent}%</p>
+        <div>
+          <div className="h-2 overflow-hidden rounded-full bg-surface-container">
+            <div className="h-full bg-primary transition-all" style={{ width: `${percent}%` }} />
+          </div>
+          <p className="mt-2 text-sm font-medium text-primary">Uploading… {percent}%</p>
+        </div>
       )}
 
-      <label className="block text-sm font-medium text-on-background">
-        Extra file (PDF or image)
+      <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-primary">
+        <FileText size={14} />
+        Add a PDF or image
         <input
           type="file"
           accept="image/*,.pdf"
           disabled={uploading}
+          className="sr-only"
           onChange={async (event) => {
             try {
               await onUpload(event.target.files?.[0] ?? null);
@@ -518,15 +554,14 @@ function LessonVideoUpload({
               event.target.value = "";
             }
           }}
-          className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3 text-sm"
         />
       </label>
       {files.map(({ asset, index }) => (
         <div key={`${asset.storagePath}-${index}`} className="flex items-center justify-between gap-2 text-sm">
-          <span className="truncate">{asset.label || asset.kind}</span>
-          <Button type="button" size="sm" variant="ghost" onClick={() => onRemove(index)}>
+          <span className="truncate">{asset.label || "Attached file"}</span>
+          <button type="button" className="text-red-700" onClick={() => onRemove(index)}>
             Remove
-          </Button>
+          </button>
         </div>
       ))}
     </div>
