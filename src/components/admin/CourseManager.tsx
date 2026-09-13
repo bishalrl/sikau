@@ -153,7 +153,7 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
   const [courses, setCourses] = useState(initialCourses);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [uploadingQr, setUploadingQr] = useState(false);
+  const [uploadingField, setUploadingField] = useState<"" | "image" | "coverImage" | "paymentQrPath">("");
   const [form, setForm] = useState<FormState>(emptyForm(canPublish));
   const [modules, setModules] = useState<EditorModule[]>([createEmptyModule()]);
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
@@ -314,13 +314,17 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
     }
   }
 
-  async function handleQrUpload(file: File | null) {
+  async function uploadImage(
+    file: File | null,
+    field: "image" | "coverImage" | "paymentQrPath",
+    folder: "blog-covers" | "payment-qr",
+  ) {
     if (!file) return;
-    setUploadingQr(true);
+    setUploadingField(field);
     setMessage("");
 
     const formData = new FormData();
-    formData.append("folder", "payment-qr");
+    formData.append("folder", folder);
     formData.append("file", file);
 
     const response = await fetch("/api/upload", {
@@ -328,15 +332,15 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
       body: formData,
     });
     const data = await response.json();
-    setUploadingQr(false);
+    setUploadingField("");
 
     if (!response.ok) {
-      setMessage(data.error ?? "Unable to upload QR image.");
+      setMessage(data.error ?? "Unable to upload image.");
       return;
     }
 
-    setForm((current) => ({ ...current, paymentQrPath: data.path }));
-    setMessage("QR image uploaded.");
+    setForm((current) => ({ ...current, [field]: data.path }));
+    setMessage("Image uploaded.");
   }
 
   return (
@@ -399,17 +403,6 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
           />
           <Input label="Category" value={form.category} onChange={(value) => setForm({ ...form, category: value })} />
           <Input label="Level" value={form.level} onChange={(value) => setForm({ ...form, level: value })} />
-          <Input label="Image URL" value={form.image} onChange={(value) => setForm({ ...form, image: value })} />
-          <Input
-            label="Cover Image URL"
-            value={form.coverImage}
-            onChange={(value) => setForm({ ...form, coverImage: value })}
-          />
-          <Input
-            label="Payment QR Path"
-            value={form.paymentQrPath}
-            onChange={(value) => setForm({ ...form, paymentQrPath: value })}
-          />
           <Input label="Price (NPR)" value={form.priceNpr} onChange={(value) => setForm({ ...form, priceNpr: value })} />
           <Input
             label="Duration Text"
@@ -439,16 +432,26 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
           />
         </label>
 
-        <label className="block text-sm font-medium text-on-background">
-          Upload Payment QR
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => handleQrUpload(e.target.files?.[0] ?? null)}
-            className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-surface-container-lowest px-4 py-3"
+        <div className="grid gap-4 md:grid-cols-3">
+          <ImagePicker
+            label="Course image"
+            path={form.image}
+            uploading={uploadingField === "image"}
+            onFile={(file) => void uploadImage(file, "image", "blog-covers")}
           />
-          {uploadingQr && <span className="mt-1 block text-xs text-on-surface-variant">Uploading QR...</span>}
-        </label>
+          <ImagePicker
+            label="Cover image"
+            path={form.coverImage}
+            uploading={uploadingField === "coverImage"}
+            onFile={(file) => void uploadImage(file, "coverImage", "blog-covers")}
+          />
+          <ImagePicker
+            label="Payment QR"
+            path={form.paymentQrPath}
+            uploading={uploadingField === "paymentQrPath"}
+            onFile={(file) => void uploadImage(file, "paymentQrPath", "payment-qr")}
+          />
+        </div>
 
         <label className="block text-sm font-medium text-on-background">
           Payment Instructions
@@ -508,5 +511,36 @@ function Input({
         className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-surface-container-lowest px-4 py-3"
       />
     </label>
+  );
+}
+
+function ImagePicker({
+  label,
+  path,
+  uploading,
+  onFile,
+}: {
+  label: string;
+  path: string;
+  uploading: boolean;
+  onFile: (file: File | null) => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-outline-variant/30 bg-surface-container-low/40 p-3">
+      <p className="text-sm font-medium text-on-background">{label}</p>
+      {path ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={path} alt="" className="mt-2 h-28 w-full rounded-xl bg-white object-contain" />
+      ) : (
+        <p className="mt-2 text-xs text-on-surface-variant">No image yet. Choose a file — don’t paste a URL.</p>
+      )}
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+        className="mt-2 w-full text-sm"
+      />
+      {uploading && <p className="mt-1 text-xs text-primary">Uploading…</p>}
+    </div>
   );
 }

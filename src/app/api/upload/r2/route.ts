@@ -7,6 +7,7 @@ import {
   buildCourseAssetKey,
   completeMultipartUpload,
   createMultipartUpload,
+  getSignedDownloadUrl,
   isR2Configured,
   signSinglePut,
   signUploadPart,
@@ -94,6 +95,12 @@ export async function POST(request: Request) {
         .parse(body);
       const storagePath = await completeMultipartUpload(input.key, input.uploadId, input.parts);
       return NextResponse.json({ storagePath });
+    }
+
+    if (action === "preview") {
+      const input = z.object({ storagePath: z.string().min(1) }).parse(body);
+      const url = await getSignedDownloadUrl(input.storagePath, 60 * 60);
+      return NextResponse.json({ url });
     }
 
     if (action === "abort") {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MarkdownEditor } from "@/components/admin/MarkdownEditor";
 import { Button } from "@/components/ui/Button";
 import { uploadCourseAssetToR2 } from "@/lib/r2-browser-upload";
@@ -79,7 +79,9 @@ export function createEmptyModule(partial?: Partial<EditorModule>): EditorModule
 }
 
 export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
-  const [uploadStatus, setUploadStatus] = useState("");
+  const [uploadKey, setUploadKey] = useState("");
+  const [uploadPercent, setUploadPercent] = useState(0);
+  const [uploadError, setUploadError] = useState("");
 
   function updateModule(moduleKey: string, patch: Partial<EditorModule>) {
     onChange(modules.map((module) => (module.key === moduleKey ? { ...module, ...patch } : module)));
@@ -130,10 +132,12 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
   async function uploadAsset(moduleKey: string, lessonKey: string, file: File | null) {
     if (!file) return;
 
-    setUploadStatus(`Uploading ${file.name} to Cloudflare R2… 0%`);
+    setUploadKey(lessonKey);
+    setUploadPercent(0);
+    setUploadError("");
     try {
       const uploaded = await uploadCourseAssetToR2(file, (percent) => {
-        setUploadStatus(`Uploading ${file.name} to Cloudflare R2… ${percent}%`);
+        setUploadPercent(percent);
       });
 
       const kind: EditorAsset["kind"] = file.type.startsWith("video/")
@@ -165,10 +169,11 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
           };
         }),
       );
-      setUploadStatus(`Uploaded ${file.name} to R2.`);
     } catch (error) {
-      setUploadStatus(error instanceof Error ? error.message : "Upload failed.");
+      setUploadError(error instanceof Error ? error.message : "Upload failed.");
       throw error;
+    } finally {
+      setUploadKey("");
     }
   }
 
@@ -191,7 +196,7 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
       </div>
 
       {message && <p className="text-sm text-on-surface-variant">{message}</p>}
-      {uploadStatus && <p className="text-sm text-primary">{uploadStatus}</p>}
+      {uploadError && <p className="text-sm text-error">{uploadError}</p>}
 
       {modules.map((module, moduleIndex) => (
         <article key={module.key} className="rounded-3xl border border-outline-variant/30 bg-surface-container-low p-5">
@@ -358,45 +363,17 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
                   />
                 </div>
 
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium">Assets</p>
-                  {lesson.assets.map((asset, assetIndex) => (
-                    <div
-                      key={`${asset.storagePath}-${assetIndex}`}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-surface-container-low px-3 py-2 text-sm"
-                    >
-                      <span>
-                        {asset.label ?? asset.kind} · <code>{asset.storagePath}</code>
-                      </span>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          updateLesson(module.key, lesson.key, {
-                            assets: lesson.assets.filter((_, index) => index !== assetIndex),
-                          })
-                        }
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
-                  <input
-                    type="file"
-                    accept="video/*,image/*,.pdf,.doc,.docx,.ppt,.pptx,.zip"
-                    onChange={async (e) => {
-                      try {
-                        await uploadAsset(module.key, lesson.key, e.target.files?.[0] ?? null);
-                      } catch (error) {
-                        console.error(error);
-                      } finally {
-                        e.target.value = "";
-                      }
-                    }}
-                    className="w-full rounded-xl border border-outline-variant/50 px-4 py-3 text-sm"
-                  />
-                </div>
+                <LessonVideoUpload
+                  assets={lesson.assets}
+                  uploading={uploadKey === lesson.key}
+                  percent={uploadPercent}
+                  onUpload={(file) => uploadAsset(module.key, lesson.key, file)}
+                  onRemove={(index) =>
+                    updateLesson(module.key, lesson.key, {
+                      assets: lesson.assets.filter((_, assetIndex) => assetIndex !== index),
+                    })
+                  }
+                />
               </div>
             ))}
           </div>
@@ -416,6 +393,141 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
             </Button>
           </div>
         </article>
+      ))}
+    </div>
+  );
+}
+
+function isVideoAsset(asset: EditorAsset) {
+  return asset.kind === "VIDEO" || asset.mimeType.startsWith("video/");
+}
+
+function LessonVideoUpload({
+  assets,
+  uploading,
+  percent,
+  onUpload,
+  onRemove,
+}: {
+  assets: EditorAsset[];
+  uploading: boolean;
+  percent: number;
+  onUpload: (file: File | null) => Promise<void>;
+  onRemove: (index: number) => void;
+}) {
+  const videos = assets
+    .map((asset, index) => ({ asset, index }))
+    .filter((item) => isVideoAsset(item.asset));
+  const files = assets
+    .map((asset, index) => ({ asset, index }))
+    .filter((item) => !isVideoAsset(item.asset));
+  const [preview, setPreview] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    for (const { asset } of videos) {
+      if (preview[asset.storagePath]) continue;
+      if (!asset.storagePath.startsWith("r2:")) {
+        setPreview((current) => ({ ...current, [asset.storagePath]: asset.storagePath }));
+        continue;
+      }
+      void fetch("/api/upload/r2", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "preview", storagePath: asset.storagePath }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (!cancelled && data.url) {
+            setPreview((current) => ({ ...current, [asset.storagePath]: data.url as string }));
+          }
+        })
+        .catch(() => undefined);
+    }
+    return () => {
+      cancelled = true;
+    };
+    // preview map is filled inside the effect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets]);
+
+  return (
+    <div className="mt-4 space-y-3 rounded-2xl border border-primary/20 bg-primary-container/5 p-4">
+      <div>
+        <p className="text-sm font-semibold text-on-background">Lesson video</p>
+        <p className="mt-1 text-xs text-on-surface-variant">
+          Choose a video file. It uploads to Cloudflare R2 — no URL needed. Large files (2–3 GB) are supported.
+        </p>
+      </div>
+
+      {videos.map(({ asset, index }) => (
+        <div key={`${asset.storagePath}-${index}`} className="space-y-2">
+          {preview[asset.storagePath] ? (
+            <video
+              controls
+              playsInline
+              className="max-h-64 w-full rounded-xl bg-black"
+              src={preview[asset.storagePath]}
+            />
+          ) : (
+            <p className="text-xs text-on-surface-variant">Loading video preview…</p>
+          )}
+          <div className="flex items-center justify-between gap-2 text-sm">
+            <span className="truncate font-medium text-on-background">{asset.label || "Uploaded video"}</span>
+            <Button type="button" size="sm" variant="ghost" onClick={() => onRemove(index)}>
+              Remove
+            </Button>
+          </div>
+        </div>
+      ))}
+
+      <label className="block text-sm font-medium text-on-background">
+        {videos.length ? "Replace or add another video" : "Upload video"}
+        <input
+          type="file"
+          accept="video/*"
+          disabled={uploading}
+          onChange={async (event) => {
+            try {
+              await onUpload(event.target.files?.[0] ?? null);
+            } catch {
+              // Parent shows the error.
+            } finally {
+              event.target.value = "";
+            }
+          }}
+          className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3 text-sm"
+        />
+      </label>
+      {uploading && (
+        <p className="text-sm font-medium text-primary">Uploading to R2… {percent}%</p>
+      )}
+
+      <label className="block text-sm font-medium text-on-background">
+        Extra file (PDF or image)
+        <input
+          type="file"
+          accept="image/*,.pdf"
+          disabled={uploading}
+          onChange={async (event) => {
+            try {
+              await onUpload(event.target.files?.[0] ?? null);
+            } catch {
+              // Parent shows the error.
+            } finally {
+              event.target.value = "";
+            }
+          }}
+          className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3 text-sm"
+        />
+      </label>
+      {files.map(({ asset, index }) => (
+        <div key={`${asset.storagePath}-${index}`} className="flex items-center justify-between gap-2 text-sm">
+          <span className="truncate">{asset.label || asset.kind}</span>
+          <Button type="button" size="sm" variant="ghost" onClick={() => onRemove(index)}>
+            Remove
+          </Button>
+        </div>
       ))}
     </div>
   );
