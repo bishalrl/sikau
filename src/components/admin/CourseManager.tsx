@@ -156,17 +156,18 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
   const [uploadingField, setUploadingField] = useState<"" | "image" | "coverImage" | "paymentQrPath">("");
   const [form, setForm] = useState<FormState>(emptyForm(canPublish));
   const [modules, setModules] = useState<EditorModule[]>([createEmptyModule()]);
-  const [editingSlug, setEditingSlug] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   function resetEditor() {
     setForm(emptyForm(canPublish));
     setModules([createEmptyModule()]);
-    setEditingSlug(null);
+    setEditingId(null);
     setMessage("");
   }
 
   function loadCourse(course: ManagedCourse) {
-    setEditingSlug(course.slug);
+    setEditingId(course.id);
     setForm({
       id: course.id,
       slug: course.slug,
@@ -216,18 +217,23 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
         throw new Error(data.error ?? "Unable to save course.");
       }
 
-      setEditingSlug(form.slug);
-      setMessage("Course saved.");
+      const savedId = data.course?.id ?? form.id;
+      if (savedId) {
+        setForm((current) => ({ ...current, id: savedId }));
+        setEditingId(savedId);
+      }
+      setMessage(editingId ? "Course updated." : "Course saved.");
       router.refresh();
 
       setCourses((current) => {
-        const exists = current.some((course) => course.slug === form.slug);
+        const exists = current.some((course) => course.id === savedId || course.slug === form.slug);
         if (exists) {
           return current.map((course) =>
-            course.slug === form.slug
+            course.id === savedId || (!savedId && course.slug === form.slug)
               ? {
                   ...course,
                   ...form,
+                  id: savedId ?? course.id,
                   titleNe: form.titleNe || null,
                   descriptionNe: form.descriptionNe || null,
                   image: form.image || null,
@@ -265,7 +271,7 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
 
         return [
           {
-            id: data.course?.id ?? form.slug,
+            id: savedId ?? form.slug,
             slug: form.slug,
             title: form.title,
             titleNe: form.titleNe || null,
@@ -314,6 +320,32 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
     }
   }
 
+  async function deleteCourse(course: ManagedCourse) {
+    const confirmed = window.confirm(
+      `Delete “${course.title}”? Lessons, enrollments, and payments for this course will be removed.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingId(course.id);
+    setMessage("");
+    try {
+      const response = await fetch(`/api/admin/courses/${course.id}`, { method: "DELETE" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to delete course.");
+      }
+
+      setCourses((current) => current.filter((item) => item.id !== course.id));
+      if (editingId === course.id) resetEditor();
+      setMessage(`Deleted “${course.title}”.`);
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to delete course.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   async function uploadImage(
     file: File | null,
     field: "image" | "coverImage" | "paymentQrPath",
@@ -347,9 +379,9 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-on-surface-variant">
-          {editingSlug ? `Editing ${editingSlug}` : "Create a new course or click one below to edit."}
+          {editingId ? `Editing ${form.title || form.slug}` : "Create a new course, or edit one below."}
         </p>
-        {editingSlug && (
+        {editingId && (
           <Button type="button" variant="outline" size="sm" onClick={resetEditor}>
             New course
           </Button>
@@ -358,14 +390,12 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
 
       <div className="grid gap-4 md:grid-cols-3">
         {courses.map((course) => (
-          <button
+          <article
             key={course.id}
-            type="button"
-            onClick={() => loadCourse(course)}
-            className={`rounded-3xl border p-5 text-left transition ${
-              editingSlug === course.slug
+            className={`rounded-3xl border p-5 transition ${
+              editingId === course.id
                 ? "border-primary bg-primary-container/10"
-                : "border-outline-variant/30 bg-white hover:border-primary/40"
+                : "border-outline-variant/30 bg-white"
             }`}
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">{course.status}</p>
@@ -374,18 +404,35 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
               {course.category} · {course.level}
             </p>
             <p className="mt-1 text-sm text-on-surface-variant">
+              NPR {course.priceNpr} · /study/{course.slug}
+            </p>
+            <p className="mt-1 text-sm text-on-surface-variant">
               {course.modules.length} modules ·{" "}
               {course.modules.reduce((sum, module) => sum + module.lessons.length, 0)} lessons
             </p>
-            <p className="mt-3 text-sm font-semibold text-primary">Edit course</p>
-          </button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button type="button" size="sm" variant="outline" onClick={() => loadCourse(course)}>
+                Edit
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="text-red-700 hover:bg-red-50"
+                disabled={deletingId === course.id}
+                onClick={() => deleteCourse(course)}
+              >
+                {deletingId === course.id ? "Deleting..." : "Delete"}
+              </Button>
+            </div>
+          </article>
         ))}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 rounded-3xl border border-outline-variant/30 bg-white p-6">
         <div>
           <h2 className="font-headline-md text-on-background">
-            {editingSlug ? "Edit course details" : "Create course"}
+            {editingId ? "Edit course details" : "Create course"}
           </h2>
           <p className="mt-1 text-sm text-on-surface-variant">
             Fill course info, then build the syllabus with modules and lessons.
@@ -484,8 +531,22 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
             {canPublish && <option value="PUBLISHED">Published</option>}
           </select>
           <Button type="submit" disabled={submitting}>
-            {submitting ? "Saving..." : editingSlug ? "Update course" : "Save course"}
+            {submitting ? "Saving..." : editingId ? "Update course" : "Save course"}
           </Button>
+          {editingId && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-red-700 hover:bg-red-50"
+              disabled={deletingId === editingId}
+              onClick={() => {
+                const course = courses.find((item) => item.id === editingId);
+                if (course) deleteCourse(course);
+              }}
+            >
+              {deletingId === editingId ? "Deleting..." : "Delete course"}
+            </Button>
+          )}
           {message && <p className="text-sm text-on-surface-variant">{message}</p>}
         </div>
       </form>

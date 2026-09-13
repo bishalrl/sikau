@@ -12,7 +12,8 @@ export default async function AdminCoursesPage() {
         <p className="text-sm font-semibold uppercase tracking-wide text-primary">Courses</p>
         <h1 className="mt-2 font-display-md text-display-md text-on-background">Upload, Review, Publish</h1>
         <p className="mt-2 max-w-3xl text-sm text-on-surface-variant">
-          Save with status <strong>Published</strong> to show the course on `/learn` and open it at
+          Edit a course below, then click Update course. Delete removes the course, its lessons, and
+          enrollments. Save with status <strong>Published</strong> to show it on `/learn` and open it at
           `/study/your-slug`. Include at least one module with one lesson.
         </p>
       </div>

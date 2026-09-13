@@ -76,54 +76,84 @@ export async function POST(request: Request) {
     const input = courseSchema.parse(await request.json());
 
     const course = await prisma.$transaction(async (tx) => {
-      const saved = await tx.course.upsert({
-        where: { slug: input.slug },
-        update: {
-          title: input.title,
-          titleNe: input.titleNe,
-          description: input.description,
-          descriptionNe: input.descriptionNe,
-          category: input.category,
-          level: input.level,
-          image: input.image || null,
-          coverImage: input.coverImage || null,
-          paymentQrPath: input.paymentQrPath || null,
-          instructorName: input.instructorName,
-          priceNpr: input.priceNpr,
-          paymentInstructions: input.paymentInstructions,
-          featured: input.featured,
-          durationText: input.durationText,
-          status: session.user.role === "ADMIN" ? input.status : CourseStatus.PENDING_REVIEW,
-          reviewedById: session.user.role === "ADMIN" ? session.user.id : null,
-          publishedAt:
-            (session.user.role === "ADMIN" ? input.status : CourseStatus.PENDING_REVIEW) === CourseStatus.PUBLISHED
-              ? new Date()
-              : null,
-        },
-        create: {
-          slug: input.slug,
-          title: input.title,
-          titleNe: input.titleNe,
-          description: input.description,
-          descriptionNe: input.descriptionNe,
-          category: input.category,
-          level: input.level,
-          image: input.image || null,
-          coverImage: input.coverImage || null,
-          paymentQrPath: input.paymentQrPath || null,
-          instructorName: input.instructorName,
-          priceNpr: input.priceNpr,
-          paymentInstructions: input.paymentInstructions,
-          featured: input.featured,
-          durationText: input.durationText,
-          instructorId: session.user.id,
-          status: session.user.role === "ADMIN" ? input.status : CourseStatus.PENDING_REVIEW,
-          publishedAt:
-            (session.user.role === "ADMIN" ? input.status : CourseStatus.PENDING_REVIEW) === CourseStatus.PUBLISHED
-              ? new Date()
-              : null,
-        },
-      });
+      const existing = input.id
+        ? await tx.course.findUnique({
+            where: { id: input.id },
+            select: { id: true, slug: true, instructorId: true, publishedAt: true },
+          })
+        : await tx.course.findUnique({
+            where: { slug: input.slug },
+            select: { id: true, slug: true, instructorId: true, publishedAt: true },
+          });
+
+      if (existing && session.user.role !== "ADMIN" && existing.instructorId !== session.user.id) {
+        throw new Error("FORBIDDEN");
+      }
+
+      if (existing && existing.slug !== input.slug) {
+        const slugTaken = await tx.course.findUnique({
+          where: { slug: input.slug },
+          select: { id: true },
+        });
+        if (slugTaken && slugTaken.id !== existing.id) {
+          throw new Error("SLUG_TAKEN");
+        }
+      }
+
+      const saved = existing
+        ? await tx.course.update({
+            where: { id: existing.id },
+            data: {
+              slug: input.slug,
+              title: input.title,
+              titleNe: input.titleNe,
+              description: input.description,
+              descriptionNe: input.descriptionNe,
+              category: input.category,
+              level: input.level,
+              image: input.image || null,
+              coverImage: input.coverImage || null,
+              paymentQrPath: input.paymentQrPath || null,
+              instructorName: input.instructorName,
+              priceNpr: input.priceNpr,
+              paymentInstructions: input.paymentInstructions,
+              featured: input.featured,
+              durationText: input.durationText,
+              status: session.user.role === "ADMIN" ? input.status : CourseStatus.PENDING_REVIEW,
+              reviewedById: session.user.role === "ADMIN" ? session.user.id : null,
+              publishedAt:
+                (session.user.role === "ADMIN" ? input.status : CourseStatus.PENDING_REVIEW) ===
+                CourseStatus.PUBLISHED
+                  ? existing.publishedAt ?? new Date()
+                  : null,
+            },
+          })
+        : await tx.course.create({
+            data: {
+              slug: input.slug,
+              title: input.title,
+              titleNe: input.titleNe,
+              description: input.description,
+              descriptionNe: input.descriptionNe,
+              category: input.category,
+              level: input.level,
+              image: input.image || null,
+              coverImage: input.coverImage || null,
+              paymentQrPath: input.paymentQrPath || null,
+              instructorName: input.instructorName,
+              priceNpr: input.priceNpr,
+              paymentInstructions: input.paymentInstructions,
+              featured: input.featured,
+              durationText: input.durationText,
+              instructorId: session.user.id,
+              status: session.user.role === "ADMIN" ? input.status : CourseStatus.PENDING_REVIEW,
+              publishedAt:
+                (session.user.role === "ADMIN" ? input.status : CourseStatus.PENDING_REVIEW) ===
+                CourseStatus.PUBLISHED
+                  ? new Date()
+                  : null,
+            },
+          });
 
       await tx.courseModule.deleteMany({
         where: { courseId: saved.id },
@@ -184,6 +214,13 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
+    }
+
+    if (error instanceof Error && error.message === "SLUG_TAKEN") {
+      return NextResponse.json({ error: "That slug is already used by another course." }, { status: 400 });
+    }
+    if (error instanceof Error && error.message === "FORBIDDEN") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     console.error("Unable to save course:", error);
