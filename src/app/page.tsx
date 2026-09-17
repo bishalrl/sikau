@@ -48,7 +48,7 @@ export default async function HomePage() {
   const [cms, liveSessions, homeReviews] = await Promise.all([
     getPublicCms(),
     getUpcomingLiveSessions(),
-    getPublishedHomeReviews(6),
+    getPublishedHomeReviews(20),
   ]);
   const hero = cms.sections["home.hero"];
   const stats = cms.sections["home.hero.stats"];
