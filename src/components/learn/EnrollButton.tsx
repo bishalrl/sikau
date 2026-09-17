@@ -13,12 +13,14 @@ export function EnrollButton({
   size = "sm",
   variant = "primary",
   className = "",
+  returnTo,
 }: {
   courseSlug: string;
   label?: string;
   size?: Size;
   variant?: Variant;
   className?: string;
+  returnTo?: string;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -43,7 +45,7 @@ export function EnrollButton({
     }
 
     if (response.status === 401) {
-      router.push(`/login?callbackUrl=${encodeURIComponent(`/learn`)}`);
+      router.push(`/login?callbackUrl=${encodeURIComponent(returnTo || `/learn/${courseSlug}`)}`);
       return;
     }
 

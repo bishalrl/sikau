@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
-import { EnrollButton } from "@/components/learn/EnrollButton";
 import { Button } from "@/components/ui/Button";
 import { SITE_ASSETS } from "@/lib/site-assets";
 
@@ -105,12 +104,9 @@ export function LearnMasterclassFeatured({
                   Continue Learning
                 </Button>
               ) : (
-                <EnrollButton
-                  courseSlug={courseSlug}
-                  label="Enroll Now"
-                  size="lg"
-                  className="flex-1 sm:flex-none"
-                />
+                <Button variant="primary" size="lg" className="flex-1 sm:flex-none" href={`/learn/${courseSlug}`}>
+                  View course
+                </Button>
               )}
               {previewHref && !approved ? (
                 <Button variant="secondary" size="lg" className="flex-1 sm:flex-none" href={previewHref}>

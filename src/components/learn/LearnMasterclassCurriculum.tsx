@@ -1,5 +1,4 @@
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
-import { EnrollButton } from "@/components/learn/EnrollButton";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { masterclassModules } from "@/lib/data";
@@ -80,7 +79,9 @@ export function LearnMasterclassCurriculum({
                   Continue Learning
                 </Button>
               ) : (
-                <EnrollButton courseSlug={courseSlug} label="Enroll Now" size="lg" className="mt-md" />
+                <Button size="lg" className="mt-md w-full" href={`/learn/${courseSlug}`}>
+                  View course
+                </Button>
               )}
             </Card>
           </div>

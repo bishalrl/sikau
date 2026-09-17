@@ -43,8 +43,8 @@ export default async function PaymentPage({
   return (
     <div className="site-container py-xl">
       <div className="mb-6">
-        <Link href="/learn" className="text-sm font-medium text-primary">
-          ← Back to courses
+        <Link href={`/learn/${course.slug}`} className="text-sm font-medium text-primary">
+          ← Back to course
         </Link>
       </div>
 

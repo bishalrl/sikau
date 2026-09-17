@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
-import { EnrollButton } from "@/components/learn/EnrollButton";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -85,14 +85,14 @@ export function LearnCourseGrid({ courses, categories, copy }: Props) {
         <div className="mt-lg grid gap-md sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((course) => (
             <Card key={course.id} hover className="overflow-hidden">
-              <div className="relative h-44">
+              <Link href={`/learn/${course.slug}`} className="relative block h-44">
                 <Image src={course.image} alt={course.title} fill className="object-cover" />
                 {course.featured && (
                   <Badge variant="gold" className="absolute left-3 top-3">
                     Featured
                   </Badge>
                 )}
-              </div>
+              </Link>
               <div className="p-md">
                 <div className="flex flex-wrap items-center gap-xs">
                   <Badge variant="emerald">{course.category}</Badge>
@@ -100,7 +100,11 @@ export function LearnCourseGrid({ courses, categories, copy }: Props) {
                   {course.paymentStatus === "APPROVED" && <Badge variant="gold">Enrolled</Badge>}
                   {course.paymentStatus === "PENDING" && <Badge>Payment pending</Badge>}
                 </div>
-                <h3 className="mt-sm font-label-md text-on-background">{course.title}</h3>
+                <h3 className="mt-sm font-label-md text-on-background">
+                  <Link href={`/learn/${course.slug}`} className="hover:text-primary">
+                    {course.title}
+                  </Link>
+                </h3>
                 <p className="font-label-sm text-primary">{course.titleNe}</p>
                 <p className="mt-sm line-clamp-2 font-body-md text-on-surface-variant">
                   {course.description}
@@ -137,7 +141,9 @@ export function LearnCourseGrid({ courses, categories, copy }: Props) {
                     Complete payment
                   </Button>
                 ) : (
-                  <EnrollButton courseSlug={course.slug} />
+                  <Button size="sm" className="mt-md w-full" href={`/learn/${course.slug}`}>
+                    View course
+                  </Button>
                 )}
               </div>
             </Card>

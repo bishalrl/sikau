@@ -1,12 +1,119 @@
 /**
  * Browser-side chunked upload straight to Cloudflare R2 via presigned URLs.
- * Supports multi-GB course videos without sending the file through Next.js.
+ * Built for multi-GB course videos: retries, parallel parts, and ETag fallback.
  */
+
+export type R2UploadProgress = {
+  percent: number;
+  loaded: number;
+  total: number;
+  partNumber?: number;
+  totalParts?: number;
+  message?: string;
+};
+
+const MAX_PART_RETRIES = 5;
+const PARALLEL_PARTS = 3;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchJson(url: string, init: RequestInit) {
+  const response = await fetch(url, init);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error((data as { error?: string }).error ?? `Request failed (${response.status}).`);
+  }
+  return data as Record<string, unknown>;
+}
+
+async function putWithRetry(url: string, body: Blob, contentType?: string, attempts = MAX_PART_RETRIES) {
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const controller = new AbortController();
+      // Large parts on slow links can take a long time; allow up to 30 minutes per attempt.
+      const timer = window.setTimeout(() => controller.abort(), 30 * 60 * 1000);
+      const response = await fetch(url, {
+        method: "PUT",
+        headers: contentType ? { "Content-Type": contentType } : undefined,
+        body,
+        signal: controller.signal,
+      });
+      window.clearTimeout(timer);
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(`R2 rejected the chunk (${response.status})${text ? `: ${text.slice(0, 120)}` : ""}`);
+      }
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Upload chunk failed.");
+      if (attempt < attempts) {
+        await sleep(Math.min(30_000, 1000 * 2 ** (attempt - 1)));
+        continue;
+      }
+    }
+  }
+  throw lastError ?? new Error("Upload chunk failed.");
+}
+
+async function resolvePartEtag(
+  response: Response,
+  key: string,
+  uploadId: string,
+  partNumber: number,
+): Promise<string> {
+  const header = response.headers.get("ETag") || response.headers.get("etag");
+  if (header) {
+    return header.startsWith('"') ? header : `"${header}"`;
+  }
+
+  // CORS may hide ETag — ask R2 through our API.
+  const listed = await fetchJson("/api/upload/r2", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "list-parts", key, uploadId }),
+  });
+  const parts = (listed.parts as Array<{ ETag: string; PartNumber: number }> | undefined) ?? [];
+  const found = parts.find((part) => part.PartNumber === partNumber);
+  if (!found?.ETag) {
+    throw new Error(
+      `Missing ETag for part ${partNumber}. Apply R2 CORS with ExposeHeaders: ETag, then try again.`,
+    );
+  }
+  return found.ETag.startsWith('"') ? found.ETag : `"${found.ETag}"`;
+}
+
+async function runPool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>) {
+  let index = 0;
+  const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (index < items.length) {
+      const current = index;
+      index += 1;
+      await worker(items[current]);
+    }
+  });
+  await Promise.all(runners);
+}
+
 export async function uploadCourseAssetToR2(
   file: File,
-  onProgress?: (percent: number) => void,
+  onProgress?: (percent: number, detail?: R2UploadProgress) => void,
 ): Promise<{ storagePath: string; mimeType: string; name: string; size: number }> {
-  const createRes = await fetch("/api/upload/r2", {
+  const report = (loaded: number, extra?: Partial<R2UploadProgress>) => {
+    const percent = file.size ? Math.min(99, Math.round((loaded / file.size) * 100)) : 0;
+    onProgress?.(percent, {
+      percent,
+      loaded,
+      total: file.size,
+      ...extra,
+    });
+  };
+
+  report(0, { message: "Starting upload…" });
+
+  const created = await fetchJson("/api/upload/r2", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -16,21 +123,10 @@ export async function uploadCourseAssetToR2(
       fileSize: file.size,
     }),
   });
-  const created = await createRes.json();
-  if (!createRes.ok) {
-    throw new Error(created.error ?? "Unable to start R2 upload.");
-  }
 
   if (created.mode === "single") {
-    const putRes = await fetch(created.url as string, {
-      method: "PUT",
-      headers: { "Content-Type": file.type || "application/octet-stream" },
-      body: file,
-    });
-    if (!putRes.ok) {
-      throw new Error("Direct R2 upload failed.");
-    }
-    onProgress?.(100);
+    await putWithRetry(created.url as string, file, file.type || "application/octet-stream");
+    onProgress?.(100, { percent: 100, loaded: file.size, total: file.size, message: "Upload complete" });
     return {
       storagePath: created.storagePath as string,
       mimeType: file.type || "application/octet-stream",
@@ -41,54 +137,85 @@ export async function uploadCourseAssetToR2(
 
   const key = created.key as string;
   const uploadId = created.uploadId as string;
-  const partSize = Number(created.partSize) || 16 * 1024 * 1024;
+  const partSize = Number(created.partSize) || 32 * 1024 * 1024;
   const totalParts = Math.ceil(file.size / partSize);
-  const parts: Array<{ ETag: string; PartNumber: number }> = [];
+  const parts: Array<{ ETag: string; PartNumber: number; size: number }> = [];
+  const completedSizes = new Map<number, number>();
+
+  const partNumbers = Array.from({ length: totalParts }, (_, i) => i + 1);
+
+  const refreshProgress = (message?: string, partNumber?: number) => {
+    const loaded = [...completedSizes.values()].reduce((sum, size) => sum + size, 0);
+    report(loaded, {
+      partNumber,
+      totalParts,
+      message,
+    });
+  };
 
   try {
-    for (let partNumber = 1; partNumber <= totalParts; partNumber += 1) {
+    await runPool(partNumbers, PARALLEL_PARTS, async (partNumber) => {
       const start = (partNumber - 1) * partSize;
       const end = Math.min(start + partSize, file.size);
       const blob = file.slice(start, end);
 
-      const signRes = await fetch("/api/upload/r2", {
+      let lastError: Error | null = null;
+      for (let attempt = 1; attempt <= MAX_PART_RETRIES; attempt += 1) {
+        try {
+          refreshProgress(
+            attempt > 1
+              ? `Retrying part ${partNumber}/${totalParts} (try ${attempt})…`
+              : `Uploading part ${partNumber}/${totalParts}…`,
+            partNumber,
+          );
+
+          const signed = await fetchJson("/api/upload/r2", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "sign-part", key, uploadId, partNumber }),
+          });
+
+          const putRes = await putWithRetry(signed.url as string, blob, undefined, 1);
+          const etag = await resolvePartEtag(putRes, key, uploadId, partNumber);
+          parts.push({ ETag: etag, PartNumber: partNumber, size: blob.size });
+          completedSizes.set(partNumber, blob.size);
+          refreshProgress(`Uploaded part ${partNumber}/${totalParts}`, partNumber);
+          return;
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error("Part upload failed.");
+          if (attempt < MAX_PART_RETRIES) {
+            await sleep(Math.min(30_000, 1500 * 2 ** (attempt - 1)));
+          }
+        }
+      }
+      throw lastError ?? new Error(`Upload failed on part ${partNumber}/${totalParts}.`);
+    });
+
+    report(file.size, { message: "Finishing upload…" });
+
+    // Prefer ETags collected from the browser; fill any gaps from R2.
+    let finalParts = parts
+      .map(({ ETag, PartNumber }) => ({ ETag, PartNumber }))
+      .sort((a, b) => a.PartNumber - b.PartNumber);
+    if (finalParts.length !== totalParts) {
+      const listed = await fetchJson("/api/upload/r2", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "sign-part", key, uploadId, partNumber }),
+        body: JSON.stringify({ action: "list-parts", key, uploadId }),
       });
-      const signed = await signRes.json();
-      if (!signRes.ok) {
-        throw new Error(signed.error ?? `Unable to sign part ${partNumber}.`);
-      }
-
-      const putRes = await fetch(signed.url as string, {
-        method: "PUT",
-        body: blob,
-      });
-      if (!putRes.ok) {
-        throw new Error(`Upload failed on part ${partNumber}/${totalParts}.`);
-      }
-
-      const etag = putRes.headers.get("ETag") || putRes.headers.get("etag");
-      if (!etag) {
-        throw new Error(`Missing ETag for part ${partNumber}. Check R2 CORS allows ETag exposure.`);
-      }
-      const normalized = etag.startsWith('"') ? etag : `"${etag}"`;
-      parts.push({ ETag: normalized, PartNumber: partNumber });
-
-      onProgress?.(Math.round((partNumber / totalParts) * 100));
+      finalParts = ((listed.parts as Array<{ ETag: string; PartNumber: number }> | undefined) ?? []).slice();
+    }
+    if (finalParts.length !== totalParts) {
+      throw new Error(`Upload incomplete: got ${finalParts.length} of ${totalParts} parts.`);
     }
 
-    const completeRes = await fetch("/api/upload/r2", {
+    const completed = await fetchJson("/api/upload/r2", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "complete", key, uploadId, parts }),
+      body: JSON.stringify({ action: "complete", key, uploadId, parts: finalParts }),
     });
-    const completed = await completeRes.json();
-    if (!completeRes.ok) {
-      throw new Error(completed.error ?? "Unable to complete R2 upload.");
-    }
 
+    onProgress?.(100, { percent: 100, loaded: file.size, total: file.size, message: "Upload complete" });
     return {
       storagePath: completed.storagePath as string,
       mimeType: file.type || "application/octet-stream",

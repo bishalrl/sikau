@@ -92,6 +92,7 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
   const [showDetails, setShowDetails] = useState<Record<string, boolean>>({});
   const [uploadKey, setUploadKey] = useState("");
   const [uploadPercent, setUploadPercent] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [uploadError, setUploadError] = useState("");
 
   function updateModule(moduleKey: string, patch: Partial<EditorModule>) {
@@ -145,11 +146,18 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
 
     setUploadKey(lessonKey);
     setUploadPercent(0);
+    setUploadStatus("Preparing upload…");
     setUploadError("");
     try {
-      const uploaded = await uploadCourseAssetToR2(file, (percent) => {
+      if (file.size > 4 * 1024 * 1024 * 1024) {
+        throw new Error("This file is larger than 4 GB. Split it or compress it before uploading.");
+      }
+
+      const uploaded = await uploadCourseAssetToR2(file, (percent, detail) => {
         setUploadPercent(percent);
+        if (detail?.message) setUploadStatus(detail.message);
       });
+      setUploadStatus("Upload complete");
 
       const kind: EditorAsset["kind"] = file.type.startsWith("video/")
         ? "VIDEO"
@@ -185,6 +193,7 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
       throw error;
     } finally {
       setUploadKey("");
+      setUploadStatus("");
     }
   }
 
@@ -302,17 +311,18 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
                         className="w-full rounded-xl border border-outline-variant/50 px-4 py-3 text-sm"
                       />
 
-                      <LessonVideoUpload
-                        assets={lesson.assets}
-                        uploading={uploadKey === lesson.key}
-                        percent={uploadPercent}
-                        onUpload={(file) => uploadAsset(module.key, lesson.key, file)}
-                        onRemove={(index) =>
-                          updateLesson(module.key, lesson.key, {
-                            assets: lesson.assets.filter((_, assetIndex) => assetIndex !== index),
-                          })
-                        }
-                      />
+                  <LessonVideoUpload
+                    assets={lesson.assets}
+                    uploading={uploadKey === lesson.key}
+                    percent={uploadPercent}
+                    status={uploadStatus}
+                    onUpload={(file) => uploadAsset(module.key, lesson.key, file)}
+                    onRemove={(index) =>
+                      updateLesson(module.key, lesson.key, {
+                        assets: lesson.assets.filter((_, assetIndex) => assetIndex !== index),
+                      })
+                    }
+                  />
 
                       <label className="flex items-center gap-2 text-sm text-on-surface-variant">
                         <input
@@ -445,12 +455,14 @@ function LessonVideoUpload({
   assets,
   uploading,
   percent,
+  status,
   onUpload,
   onRemove,
 }: {
   assets: EditorAsset[];
   uploading: boolean;
   percent: number;
+  status?: string;
   onUpload: (file: File | null) => Promise<void>;
   onRemove: (index: number) => void;
 }) {
@@ -510,7 +522,7 @@ function LessonVideoUpload({
           {videos.length ? "Add another video" : "Upload lesson video"}
         </span>
         <span className="mt-1 text-xs text-on-surface-variant">
-          Choose a file. Large videos (2–3 GB) upload in the background. No link needed.
+          Large videos (2–3 GB) upload in chunks to Cloudflare. Keep this tab open until it finishes.
         </span>
         <input
           type="file"
@@ -531,9 +543,15 @@ function LessonVideoUpload({
       {uploading && (
         <div>
           <div className="h-2 overflow-hidden rounded-full bg-surface-container">
-            <div className="h-full bg-primary transition-all" style={{ width: `${percent}%` }} />
+            <div className="h-full bg-primary transition-all" style={{ width: `${Math.max(percent, 2)}%` }} />
           </div>
-          <p className="mt-2 text-sm font-medium text-primary">Uploading… {percent}%</p>
+          <p className="mt-2 text-sm font-medium text-primary">
+            Uploading… {percent}%
+            {status ? ` · ${status}` : ""}
+          </p>
+          <p className="mt-1 text-xs text-on-surface-variant">
+            Do not close or refresh this page. Failed chunks are retried automatically.
+          </p>
         </div>
       )}
 

@@ -5,10 +5,12 @@ import { authOptions } from "@/lib/auth";
 import {
   abortMultipartUpload,
   buildCourseAssetKey,
+  chooseMultipartPartSize,
   completeMultipartUpload,
   createMultipartUpload,
   getSignedDownloadUrl,
   isR2Configured,
+  listUploadedParts,
   signSinglePut,
   signUploadPart,
   storagePathFromR2Key,
@@ -61,9 +63,19 @@ export async function POST(request: Request) {
         key,
         uploadId,
         storagePath: storagePathFromR2Key(key),
-        // 16MB parts keep request counts reasonable for 2–3GB files.
-        partSize: 16 * 1024 * 1024,
+        partSize: chooseMultipartPartSize(input.fileSize),
       });
+    }
+
+    if (action === "list-parts") {
+      const input = z
+        .object({
+          key: z.string().min(1),
+          uploadId: z.string().min(1),
+        })
+        .parse(body);
+      const parts = await listUploadedParts(input.key, input.uploadId);
+      return NextResponse.json({ parts });
     }
 
     if (action === "sign-part") {

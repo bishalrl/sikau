@@ -3,6 +3,7 @@ import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
   GetObjectCommand,
+  ListPartsCommand,
   PutObjectCommand,
   S3Client,
   UploadPartCommand,
@@ -103,8 +104,42 @@ export async function signUploadPart(key: string, uploadId: string, partNumber: 
     UploadId: uploadId,
     PartNumber: partNumber,
   });
-  // 1 hour per part — enough for slow connections on large videos.
-  return getSignedUrl(client, command, { expiresIn: 60 * 60 });
+  // 2 hours per part — large video chunks on slow connections.
+  return getSignedUrl(client, command, { expiresIn: 60 * 60 * 2 });
+}
+
+/** Read part ETags from R2 when the browser cannot see the ETag header (CORS). */
+export async function listUploadedParts(key: string, uploadId: string) {
+  const client = createR2Client("write");
+  const parts: Array<{ ETag: string; PartNumber: number }> = [];
+  let partNumberMarker: string | undefined;
+
+  do {
+    const result = await client.send(
+      new ListPartsCommand({
+        Bucket: getR2Bucket(),
+        Key: key,
+        UploadId: uploadId,
+        PartNumberMarker: partNumberMarker,
+        MaxParts: 1000,
+      }),
+    );
+    for (const part of result.Parts ?? []) {
+      if (!part.PartNumber || !part.ETag) continue;
+      const etag = part.ETag.startsWith('"') ? part.ETag : `"${part.ETag}"`;
+      parts.push({ ETag: etag, PartNumber: part.PartNumber });
+    }
+    partNumberMarker = result.IsTruncated ? result.NextPartNumberMarker : undefined;
+  } while (partNumberMarker);
+
+  return parts.sort((a, b) => a.PartNumber - b.PartNumber);
+}
+
+export function chooseMultipartPartSize(fileSize: number) {
+  // Fewer parts = fewer network round-trips. S3/R2 max 10,000 parts; min part 5MB.
+  if (fileSize >= 3 * 1024 * 1024 * 1024) return 64 * 1024 * 1024;
+  if (fileSize >= 1024 * 1024 * 1024) return 32 * 1024 * 1024;
+  return 16 * 1024 * 1024;
 }
 
 export async function completeMultipartUpload(
