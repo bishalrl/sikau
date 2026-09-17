@@ -14,9 +14,14 @@ import { MeetRajuSection } from "@/components/landing/MeetRajuSection";
 import { MobileBottomNav } from "@/components/landing/MobileBottomNav";
 import { RoadmapSection } from "@/components/landing/RoadmapSection";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
-import { TransformationSection } from "@/components/landing/TransformationSection";
+import { HomepageReviewsSection } from "@/components/landing/HomepageReviewsSection";
 import { TrustMarquee } from "@/components/landing/TrustMarquee";
-import { getHomepagePromoCourse, getHomepagePromoEbook, getUpcomingLiveSessions } from "@/lib/repositories";
+import {
+  getHomepagePromoCourse,
+  getHomepagePromoEbook,
+  getPublishedHomeReviews,
+  getUpcomingLiveSessions,
+} from "@/lib/repositories";
 import { getCurrentSession } from "@/lib/session";
 
 function moneyLabel(priceNpr: number, isFree?: boolean) {
@@ -40,7 +45,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   const session = await getCurrentSession();
-  const [cms, liveSessions] = await Promise.all([getPublicCms(), getUpcomingLiveSessions()]);
+  const [cms, liveSessions, homeReviews] = await Promise.all([
+    getPublicCms(),
+    getUpcomingLiveSessions(),
+    getPublishedHomeReviews(6),
+  ]);
   const hero = cms.sections["home.hero"];
   const stats = cms.sections["home.hero.stats"];
   const trust = cms.sections["home.trust"];
@@ -170,25 +179,11 @@ export default async function HomePage() {
             }))}
           />
         )}
-        {stories?.enabled !== false && (
-          <TransformationSection
+        {stories?.enabled !== false && homeReviews.length > 0 && (
+          <HomepageReviewsSection
             title={stories?.data.title}
             description={stories?.data.description}
-            stories={stories?.items.map((item) => ({
-              name: item.data.name,
-              role: item.data.role,
-              image: item.data.image,
-              badge: item.data.badge,
-              quote: item.data.quote,
-              beforeTitle: item.data.beforeTitle,
-              beforeDetail: item.data.beforeDetail,
-              beforeTitle2: item.data.beforeTitle2,
-              beforeDetail2: item.data.beforeDetail2,
-              afterTitle: item.data.afterTitle,
-              afterDetail: item.data.afterDetail,
-              afterTitle2: item.data.afterTitle2,
-              afterDetail2: item.data.afterDetail2,
-            }))}
+            reviews={homeReviews}
           />
         )}
         {roadmap?.enabled !== false && (

@@ -59,21 +59,6 @@ const moduleFields: CmsField[] = [
   area("summary", "Summary", "Leave blank if you list lessons below."),
   area("lessons", "Lessons", "One per line: Lesson title | 15:20"),
 ];
-const storyFields: CmsField[] = [
-  text("name", "Name"),
-  text("role", "Role"),
-  image("image", "Photo"),
-  text("badge", "Badge"),
-  area("quote", "Quote"),
-  text("beforeTitle", "Before — title"),
-  text("beforeDetail", "Before — detail"),
-  text("beforeTitle2", "Before — second title"),
-  text("beforeDetail2", "Before — second detail"),
-  text("afterTitle", "After — title"),
-  text("afterDetail", "After — detail"),
-  text("afterTitle2", "After — second title"),
-  text("afterDetail2", "After — second detail"),
-];
 
 function setting(
   key: string,
@@ -112,11 +97,6 @@ function item(
 ): CmsDefinition {
   return { kind: "item", key, parentKey, label, placement, groupName, sortOrder, enabled: true, fields, data };
 }
-
-const ANIL =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuA2cT1UNITrbeT3Tm-WJuoszMyy8QW7X0bb_x2Q-ETCPSnMINX0Ah6qPWmjvpNRbqVDRo_-G8-j-vb5iYQP-pAjv-Rlw7j-Yx4ISf38Zkb-WKcHMwDNrTf7z0qzu2PhWgSitpOdFcj00xNlDImuAeVV-eGjQypBmGj2EeR8i8EGdUQb55U9CjkNqBwC0T7gHzq4aCZGIISwXLmUCXXDepTx8wyxqvm3hYtCq20vtbH05tNLQRA2jk5PAr11-tuKlxHViHKPPQYkYbU";
-const SUNITA =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuBXgvPct0stMicL_YgSPmwBOpj1wh17GSH0yeCt0uV7VnreAj1FfrscE1Z6xiPYodiAN8Dx0VwbUjCi86O615QGES_hQxhl1-TvMPrpXqTM69GEodwN0IlQB18O5hawaKNY1Y5Rlp9kFCAqi80STLRVP87HytOFc1f7Fwtk7315eBazFb258HY2wy14lWIdTcyWOZVDqQ0blx4n207C7xRl4mdPWuxq5rozjXJyP5SVjgweF1XP7-UVNDClU8eL8kYMt_pVsSkZY7c";
 
 export const CMS_DEFINITIONS: CmsDefinition[] = [
   setting(
@@ -492,47 +472,16 @@ export const CMS_DEFINITIONS: CmsDefinition[] = [
   ),
   section(
     "home.stories",
-    "Transformation stories",
-    "Homepage testimonials",
+    "Reviews section",
+    "Homepage reviews heading. Review cards come from Admin → Reviews.",
     "Homepage",
     10,
     [text("title", "Heading"), area("description", "Description")],
     {
-      title: "Transformation Stories",
-      description: "See the real-world impact of disciplined financial education.",
+      title: "What learners say",
+      description: "Real feedback from people who joined Sikau Paisa.",
     },
-    storyFields,
   ),
-  item("home.stories.anil", "home.stories", "Anil Sharma", "Transformation stories", "Homepage", 1, storyFields, {
-    name: "Anil Sharma",
-    role: "Software Engineer",
-    image: ANIL,
-    badge: "After 12 Months",
-    quote: "",
-    beforeTitle: "Random Spending",
-    beforeDetail: "Zero savings at month end",
-    beforeTitle2: "No Insurance",
-    beforeDetail2: "High risk for family",
-    afterTitle: "NPR 15k Monthly SIP",
-    afterDetail: "Consistent wealth building",
-    afterTitle2: "Fully Insured",
-    afterDetail2: "Peace of mind secured",
-  }),
-  item("home.stories.sunita", "home.stories", "Sunita Tamang", "Transformation stories", "Homepage", 2, storyFields, {
-    name: "Sunita Tamang",
-    role: "Banker",
-    image: SUNITA,
-    badge: "After 6 Months",
-    quote: "Raju's Masterclass changed how I look at my salary. I used to think I didn't earn enough to save, now I have a portfolio!",
-    beforeTitle: "Loan Trap",
-    beforeDetail: "Struggling with EMI",
-    beforeTitle2: "",
-    beforeDetail2: "",
-    afterTitle: "Debt Free",
-    afterDetail: "Optimized portfolio growth",
-    afterTitle2: "",
-    afterDetail2: "",
-  }),
   section(
     "home.roadmap",
     "Roadmap",
@@ -614,11 +563,48 @@ export const CMS_DEFINITIONS: CmsDefinition[] = [
     },
   ),
   section(
-    "learn.explore",
-    "Course list heading",
-    "Learn page, below the masterclass",
+    "learn.featured",
+    "Featured course on Learn",
+    "Top banner on /learn",
     "Learn page",
     1,
+    [
+      courseSelect("courseSlug", "Course to feature", "This course appears at the top of the Courses page."),
+      text("badge", "Badge"),
+      text("subtitle", "Subtitle", "Optional line under the title. Leave blank to use instructor name."),
+      text("listPrice", "Old price", "Optional crossed-out price, e.g. NPR 4,999"),
+      text("cta", "Button text for guests"),
+      area("includes", "What you'll get", "One benefit per line. Shown in the side card."),
+    ],
+    {
+      courseSlug: "",
+      badge: "Featured course",
+      subtitle: "",
+      listPrice: "",
+      cta: "View course",
+      includes:
+        "Lifetime access to all modules\nDownloadable worksheets & templates\nPrivate community access\nCompletion certificate\nMonthly live Q&A sessions",
+    },
+    featureFields,
+  ),
+  item("learn.featured.1", "learn.featured", "Feature 1", "Featured course on Learn", "Learn page", 1, featureFields, {
+    text: "4+ Hours of On-Demand HD Video",
+  }),
+  item("learn.featured.2", "learn.featured", "Feature 2", "Featured course on Learn", "Learn page", 2, featureFields, {
+    text: "Lifetime Access & Free Updates",
+  }),
+  item("learn.featured.3", "learn.featured", "Feature 3", "Featured course on Learn", "Learn page", 3, featureFields, {
+    text: "Exclusive Community Networking",
+  }),
+  item("learn.featured.4", "learn.featured", "Feature 4", "Featured course on Learn", "Learn page", 4, featureFields, {
+    text: "Ready-to-use Wealth Calculators",
+  }),
+  section(
+    "learn.explore",
+    "Course list heading",
+    "Learn page, below the featured course",
+    "Learn page",
+    2,
     [text("badge", "Badge"), text("title", "Heading"), area("description", "Description")],
     {
       badge: "All Courses",

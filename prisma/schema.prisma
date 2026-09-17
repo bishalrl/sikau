@@ -605,9 +605,12 @@ model Review {
   body      String
   type      ReviewType
   imagePath String?
+  published Boolean    @default(false)
+  sortOrder Int        @default(0)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
   @@index([type, createdAt])
+  @@index([published, sortOrder, createdAt])
   @@index([createdAt])
 }

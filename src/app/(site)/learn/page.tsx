@@ -1,15 +1,17 @@
 import { LearnCourseGrid } from "@/components/learn/LearnCourseGrid";
-import { LearnMasterclassCurriculum } from "@/components/learn/LearnMasterclassCurriculum";
+import {
+  LearnMasterclassCurriculum,
+  summarizeCourseModules,
+} from "@/components/learn/LearnMasterclassCurriculum";
 import { LearnMasterclassFeatured } from "@/components/learn/LearnMasterclassFeatured";
 import { getPublicCms } from "@/lib/cms/public";
 import {
   getCourseBySlug,
+  getHomepagePromoCourse,
   getLearnCategories,
   getPublishedCourses,
 } from "@/lib/repositories";
 import { getCurrentSession } from "@/lib/session";
-
-const MASTERCLASS_SLUG = "personal-finance-masterclass";
 
 export default async function LearnPage() {
   const session = await getCurrentSession();
@@ -19,37 +21,72 @@ export default async function LearnPage() {
     getPublicCms(),
   ]);
   const explore = cms.sections["learn.explore"];
+  const featured = cms.sections["learn.featured"];
 
-  const masterclass =
-    courses.find((course) => course.slug === MASTERCLASS_SLUG) ??
-    courses.find((course) => course.featured) ??
-    courses[0];
+  const featuredCourse =
+    featured?.enabled === false
+      ? null
+      : await getHomepagePromoCourse(featured?.data.courseSlug || undefined);
 
-  const masterclassDetail = masterclass
-    ? await getCourseBySlug(masterclass.slug, session?.user.id)
+  const featuredDetail = featuredCourse
+    ? await getCourseBySlug(featuredCourse.slug, session?.user.id)
     : null;
 
-  const previewLesson = masterclassDetail?.modules
+  const enrollmentStatus = Array.isArray(featuredDetail?.enrollments)
+    ? featuredDetail?.enrollments[0]?.paymentStatus ?? null
+    : courses.find((course) => course.slug === featuredCourse?.slug)?.paymentStatus ?? null;
+
+  const previewLesson = featuredDetail?.modules
     .flatMap((module) => module.lessons)
     .find((lesson) => lesson.isPreview);
 
   const previewHref =
-    masterclass && previewLesson
-      ? `/study/${masterclass.slug}/${previewLesson.slug}`
+    featuredDetail && previewLesson
+      ? `/study/${featuredDetail.slug}/${previewLesson.slug}`
       : null;
+
+  const includes = (featured?.data.includes || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const features = featured?.items.map((item) => item.data.text).filter(Boolean) ?? [];
 
   return (
     <div className="bg-background">
-      <LearnMasterclassFeatured
-        courseSlug={masterclass?.slug ?? MASTERCLASS_SLUG}
-        priceNpr={1999}
-        paymentStatus={masterclass?.paymentStatus}
-        previewHref={previewHref}
-      />
-      <LearnMasterclassCurriculum
-        courseSlug={masterclass?.slug ?? MASTERCLASS_SLUG}
-        paymentStatus={masterclass?.paymentStatus}
-      />
+      {featuredCourse && featuredDetail && (
+        <>
+          <LearnMasterclassFeatured
+            courseSlug={featuredDetail.slug}
+            title={featuredDetail.title}
+            titleNe={featuredDetail.titleNe}
+            subtitle={
+              featured?.data.subtitle ||
+              `by ${featuredDetail.instructorName}${featuredDetail.titleNe ? ` · ${featuredDetail.titleNe}` : ""}`
+            }
+            description={featuredDetail.description}
+            image={featuredDetail.coverImage || featuredDetail.image}
+            badge={featured?.data.badge}
+            rating={featuredDetail.rating}
+            students={featuredDetail.studentsCount}
+            priceNpr={featuredDetail.priceNpr}
+            listPrice={featured?.data.listPrice || undefined}
+            cta={featured?.data.cta || "View course"}
+            features={features}
+            paymentStatus={enrollmentStatus}
+            previewHref={previewHref}
+          />
+          <LearnMasterclassCurriculum
+            courseSlug={featuredDetail.slug}
+            modules={summarizeCourseModules(featuredDetail.modules)}
+            includes={includes}
+            priceNpr={featuredDetail.priceNpr}
+            listPrice={featured?.data.listPrice || undefined}
+            paymentStatus={enrollmentStatus}
+            cta={featured?.data.cta || "View course"}
+          />
+        </>
+      )}
       <LearnCourseGrid
         courses={courses}
         categories={categories}

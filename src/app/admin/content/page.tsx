@@ -27,8 +27,8 @@ export default async function AdminContentPage() {
         <p className="text-sm font-semibold uppercase tracking-wide text-primary">Website</p>
         <h1 className="mt-2 font-display-md text-display-md text-on-background">Website content</h1>
         <p className="mt-2 max-w-2xl text-sm text-on-surface-variant">
-          Edit homepage promotions, menus, photos, and SEO. Under Homepage, open Featured course and Featured
-          ebook to choose what visitors see.
+          Edit homepage promotions, the featured course on /learn, menus, photos, and SEO. Under Learn page,
+          open Featured course on Learn to choose which course sits at the top.
         </p>
       </div>
       <CmsManager

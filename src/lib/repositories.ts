@@ -248,6 +248,23 @@ export async function getHomepagePromoEbook(preferredSlug?: string) {
   return selected;
 }
 
+export async function getPublishedHomeReviews(limit = 6) {
+  return safeQuery(async () => {
+    return prisma.review.findMany({
+      where: { published: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        body: true,
+        type: true,
+        imagePath: true,
+      },
+    });
+  }, []);
+}
+
 export async function getDashboardData(user?: SessionUser | null) {
   const fallback = {
     stats: dashboardStats,

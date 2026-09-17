@@ -47,6 +47,7 @@ export async function POST(request: Request) {
         body,
         type: typeParsed.data as ReviewType,
         imagePath,
+        published: false,
       },
     });
 
