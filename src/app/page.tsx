@@ -4,6 +4,7 @@ import { CurriculumAccordion } from "@/components/landing/CurriculumAccordion";
 import { CurriculumGrid } from "@/components/landing/CurriculumGrid";
 import { FinalCtaSection } from "@/components/landing/FinalCtaSection";
 import { HomepageNewsletterSection } from "@/components/landing/HomepageNewsletterSection";
+import { HomepageEbookSection } from "@/components/landing/HomepageEbookSection";
 import { HomepageLiveSessions } from "@/components/landing/HomepageLiveSessions";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingHeader } from "@/components/landing/LandingHeader";
@@ -15,8 +16,13 @@ import { RoadmapSection } from "@/components/landing/RoadmapSection";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { TransformationSection } from "@/components/landing/TransformationSection";
 import { TrustMarquee } from "@/components/landing/TrustMarquee";
-import { getUpcomingLiveSessions } from "@/lib/repositories";
+import { getHomepagePromoCourse, getHomepagePromoEbook, getUpcomingLiveSessions } from "@/lib/repositories";
 import { getCurrentSession } from "@/lib/session";
+
+function moneyLabel(priceNpr: number, isFree?: boolean) {
+  if (isFree || priceNpr <= 0) return "Free";
+  return `NPR ${priceNpr.toLocaleString()}`;
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const cms = await getPublicCms();
@@ -40,6 +46,7 @@ export default async function HomePage() {
   const trust = cms.sections["home.trust"];
   const raju = cms.sections["home.raju"];
   const masterclass = cms.sections["home.masterclass"];
+  const ebookPromo = cms.sections["home.ebookPromo"];
   const newsletter = cms.sections["home.newsletter"];
   const live = cms.sections["home.live"];
   const curriculum = cms.sections["home.curriculum"];
@@ -47,6 +54,15 @@ export default async function HomePage() {
   const roadmap = cms.sections["home.roadmap"];
   const inside = cms.sections["home.inside"];
   const closing = cms.sections["home.cta"];
+
+  const [featuredCourse, featuredEbook] = await Promise.all([
+    masterclass?.enabled !== false
+      ? getHomepagePromoCourse(masterclass?.data.courseSlug || undefined)
+      : Promise.resolve(null),
+    ebookPromo?.enabled !== false
+      ? getHomepagePromoEbook(ebookPromo?.data.ebookSlug || undefined)
+      : Promise.resolve(null),
+  ]);
 
   const sessions = [...liveSessions]
     .sort((a, b) => {
@@ -102,17 +118,29 @@ export default async function HomePage() {
             timeline={raju?.items.map((item) => ({ title: item.data.title, description: item.data.description }))}
           />
         )}
-        {masterclass?.enabled !== false && (
+        {masterclass?.enabled !== false && featuredCourse && (
           <MasterclassSection
             badge={masterclass?.data.badge}
-            title={masterclass?.data.title}
-            image={masterclass?.data.image}
-            imageAlt={masterclass?.data.imageAlt}
-            listPrice={masterclass?.data.listPrice}
-            price={masterclass?.data.price}
-            cta={masterclass?.data.cta}
-            ctaHref={masterclass?.data.ctaHref}
+            title={masterclass?.data.title || featuredCourse.title}
+            image={masterclass?.data.image || featuredCourse.coverImage || featuredCourse.image || undefined}
+            imageAlt={masterclass?.data.imageAlt || featuredCourse.title}
+            listPrice={masterclass?.data.listPrice || undefined}
+            price={masterclass?.data.price || moneyLabel(featuredCourse.priceNpr)}
+            cta={masterclass?.data.cta || "View course"}
+            href={`/learn/${featuredCourse.slug}`}
             features={masterclass?.items.map((item) => item.data.text).filter(Boolean)}
+          />
+        )}
+        {ebookPromo?.enabled !== false && featuredEbook && (
+          <HomepageEbookSection
+            badge={ebookPromo?.data.badge}
+            title={ebookPromo?.data.title || featuredEbook.title}
+            description={ebookPromo?.data.description || featuredEbook.description}
+            image={ebookPromo?.data.image || featuredEbook.coverImage || undefined}
+            listPrice={ebookPromo?.data.listPrice || undefined}
+            price={ebookPromo?.data.price || moneyLabel(featuredEbook.priceNpr, featuredEbook.isFree)}
+            cta={ebookPromo?.data.cta || "Get the ebook"}
+            href={`/ebooks/${featuredEbook.slug}`}
           />
         )}
         {newsletter?.enabled !== false && (

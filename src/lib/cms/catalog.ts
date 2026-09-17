@@ -1,12 +1,13 @@
 import { SITE_ASSETS } from "@/lib/site-assets";
 
-export type CmsFieldType = "text" | "textarea" | "image" | "url";
+export type CmsFieldType = "text" | "textarea" | "image" | "url" | "select";
 
 export type CmsField = {
   key: string;
   label: string;
   type: CmsFieldType;
   hint?: string;
+  optionsSource?: "courses" | "ebooks";
 };
 
 export type CmsKind = "setting" | "section" | "item";
@@ -29,6 +30,20 @@ const text = (key: string, label: string, hint?: string): CmsField => ({ key, la
 const area = (key: string, label: string, hint?: string): CmsField => ({ key, label, type: "textarea", hint });
 const image = (key: string, label: string, hint?: string): CmsField => ({ key, label, type: "image", hint });
 const url = (key: string, label: string, hint?: string): CmsField => ({ key, label, type: "url", hint });
+const courseSelect = (key: string, label: string, hint?: string): CmsField => ({
+  key,
+  label,
+  type: "select",
+  hint,
+  optionsSource: "courses",
+});
+const ebookSelect = (key: string, label: string, hint?: string): CmsField => ({
+  key,
+  label,
+  type: "select",
+  hint,
+  optionsSource: "ebooks",
+});
 
 const linkFields: CmsField[] = [text("label", "Label"), url("href", "Link")];
 const statFields: CmsField[] = [text("value", "Number"), text("label", "Label"), text("icon", "Icon name", "Material icon, e.g. groups")];
@@ -365,42 +380,69 @@ export const CMS_DEFINITIONS: CmsDefinition[] = [
   }),
   section(
     "home.masterclass",
-    "Masterclass banner",
+    "Featured course",
     "Dark course banner on the homepage",
     "Homepage",
     5,
     [
+      courseSelect("courseSlug", "Course to promote", "Pick a published course. Title, photo, and price come from that course."),
       text("badge", "Badge"),
-      text("title", "Heading"),
-      image("image", "Photo"),
+      text("title", "Heading override", "Leave blank to use the course title."),
+      image("image", "Photo override", "Leave blank to use the course cover."),
       text("imageAlt", "Photo description"),
-      text("listPrice", "Old price"),
-      text("price", "Price"),
+      text("listPrice", "Old price", "Optional crossed-out price, e.g. NPR 4,999"),
+      text("price", "Price override", "Leave blank to use the course price."),
       text("cta", "Button text"),
-      url("ctaHref", "Button link"),
     ],
     {
+      courseSlug: "",
       badge: "Premium Course",
-      title: "Personal Finance Masterclass",
-      image: SITE_ASSETS.raju3,
-      imageAlt: "Financial charts on tablet",
-      listPrice: "NPR 4,999",
-      price: "NPR 1,999",
-      cta: "Get the Ebook",
-      ctaHref: "/ebooks",
+      title: "",
+      image: "",
+      imageAlt: "Course cover",
+      listPrice: "",
+      price: "",
+      cta: "View course",
     },
     featureFields,
   ),
-  item("home.masterclass.1", "home.masterclass", "Feature 1", "Masterclass banner", "Homepage", 1, featureFields, { text: "4+ Hours of On-Demand HD Video" }),
-  item("home.masterclass.2", "home.masterclass", "Feature 2", "Masterclass banner", "Homepage", 2, featureFields, { text: "Lifetime Access & Free Updates" }),
-  item("home.masterclass.3", "home.masterclass", "Feature 3", "Masterclass banner", "Homepage", 3, featureFields, { text: "Exclusive Community Networking" }),
-  item("home.masterclass.4", "home.masterclass", "Feature 4", "Masterclass banner", "Homepage", 4, featureFields, { text: "Ready-to-use Wealth Calculators" }),
+  item("home.masterclass.1", "home.masterclass", "Feature 1", "Featured course", "Homepage", 1, featureFields, { text: "4+ Hours of On-Demand HD Video" }),
+  item("home.masterclass.2", "home.masterclass", "Feature 2", "Featured course", "Homepage", 2, featureFields, { text: "Lifetime Access & Free Updates" }),
+  item("home.masterclass.3", "home.masterclass", "Feature 3", "Featured course", "Homepage", 3, featureFields, { text: "Exclusive Community Networking" }),
+  item("home.masterclass.4", "home.masterclass", "Feature 4", "Featured course", "Homepage", 4, featureFields, { text: "Ready-to-use Wealth Calculators" }),
+  section(
+    "home.ebookPromo",
+    "Featured ebook",
+    "Ebook banner on the homepage",
+    "Homepage",
+    6,
+    [
+      ebookSelect("ebookSlug", "Ebook to promote", "Pick a published ebook. Title, cover, and price come from that ebook."),
+      text("badge", "Badge"),
+      text("title", "Heading override", "Leave blank to use the ebook title."),
+      area("description", "Short description override", "Leave blank to use the ebook description."),
+      image("image", "Cover override", "Leave blank to use the ebook cover."),
+      text("listPrice", "Old price", "Optional crossed-out price"),
+      text("price", "Price override", "Leave blank to use the ebook price."),
+      text("cta", "Button text"),
+    ],
+    {
+      ebookSlug: "",
+      badge: "Ebook",
+      title: "",
+      description: "",
+      image: "",
+      listPrice: "",
+      price: "",
+      cta: "Get the ebook",
+    },
+  ),
   section(
     "home.newsletter",
     "Newsletter banner",
     "Homepage newsletter strip. Product title and price still come from Newsletter.",
     "Homepage",
-    6,
+    7,
     [text("badge", "Badge"), text("primaryCta", "Primary button"), text("secondaryCta", "Secondary button")],
     { badge: "Newsletter", primaryCta: "Subscribe", secondaryCta: "Login first" },
   ),
@@ -409,7 +451,7 @@ export const CMS_DEFINITIONS: CmsDefinition[] = [
     "Live sessions heading",
     "Homepage live section. Sessions themselves are managed under Live sessions.",
     "Homepage",
-    7,
+    8,
     [text("badge", "Badge"), text("title", "Heading"), area("description", "Description")],
     {
       badge: "Live sessions",
@@ -422,7 +464,7 @@ export const CMS_DEFINITIONS: CmsDefinition[] = [
     "Curriculum cards",
     "Homepage topic grid",
     "Homepage",
-    8,
+    9,
     [text("title", "Heading"), area("description", "Description")],
     {
       title: "A Comprehensive Curriculum",
@@ -453,7 +495,7 @@ export const CMS_DEFINITIONS: CmsDefinition[] = [
     "Transformation stories",
     "Homepage testimonials",
     "Homepage",
-    9,
+    10,
     [text("title", "Heading"), area("description", "Description")],
     {
       title: "Transformation Stories",

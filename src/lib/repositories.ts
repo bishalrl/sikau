@@ -226,6 +226,28 @@ export async function getCourseBySlug(slug: string, userId?: string) {
   );
 }
 
+export async function getHomepagePromoCourse(preferredSlug?: string) {
+  return safeQuery(async () => {
+    if (preferredSlug) {
+      const selected = await prisma.course.findFirst({
+        where: { slug: preferredSlug, status: CourseStatus.PUBLISHED },
+      });
+      if (selected) return selected;
+    }
+    return prisma.course.findFirst({
+      where: { status: CourseStatus.PUBLISHED },
+      orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+    });
+  }, null);
+}
+
+export async function getHomepagePromoEbook(preferredSlug?: string) {
+  if (!preferredSlug) return null;
+  const selected = await getEbookBySlug(preferredSlug);
+  if (!selected || selected.status !== "PUBLISHED") return null;
+  return selected;
+}
+
 export async function getDashboardData(user?: SessionUser | null) {
   const fallback = {
     stats: dashboardStats,

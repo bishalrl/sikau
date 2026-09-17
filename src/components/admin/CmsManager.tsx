@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/Button";
 
 type Props = {
   records: CmsRecord[];
+  courseOptions?: Array<{ value: string; label: string }>;
+  ebookOptions?: Array<{ value: string; label: string }>;
 };
 
-export function CmsManager({ records }: Props) {
+export function CmsManager({ records, courseOptions = [], ebookOptions = [] }: Props) {
   const [entries, setEntries] = useState(records);
   const [group, setGroup] = useState<(typeof CMS_GROUPS)[number]>("Homepage");
   const [openKey, setOpenKey] = useState("home.hero");
@@ -217,6 +219,13 @@ export function CmsManager({ records }: Props) {
                       hint={field.hint}
                       type={field.type}
                       value={entry.data[field.key] ?? ""}
+                      options={
+                        field.optionsSource === "courses"
+                          ? courseOptions
+                          : field.optionsSource === "ebooks"
+                            ? ebookOptions
+                            : undefined
+                      }
                       uploading={uploading === `${entry.key}:${field.key}`}
                       onChange={(value) => setField(entry.key, field.key, value)}
                       onFile={(file) => void upload(entry.key, field.key, file)}
@@ -258,6 +267,13 @@ export function CmsManager({ records }: Props) {
                               hint={field.hint}
                               type={field.type}
                               value={child.data[field.key] ?? ""}
+                              options={
+                                field.optionsSource === "courses"
+                                  ? courseOptions
+                                  : field.optionsSource === "ebooks"
+                                    ? ebookOptions
+                                    : undefined
+                              }
                               uploading={uploading === `${child.key}:${field.key}`}
                               onChange={(value) => setField(child.key, field.key, value)}
                               onFile={(file) => void upload(child.key, field.key, file)}
@@ -293,18 +309,46 @@ function Field({
   hint,
   type,
   value,
+  options,
   uploading,
   onChange,
   onFile,
 }: {
   label: string;
   hint?: string;
-  type: "text" | "textarea" | "image" | "url";
+  type: "text" | "textarea" | "image" | "url" | "select";
   value: string;
+  options?: Array<{ value: string; label: string }>;
   uploading: boolean;
   onChange: (value: string) => void;
   onFile: (file: File | null) => void;
 }) {
+  if (type === "select") {
+    return (
+      <label className="block text-sm font-medium">
+        {label}
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-3 py-2"
+        >
+          <option value="">None — hide this promo</option>
+          {options?.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {hint && <span className="mt-1 block text-xs font-normal text-on-surface-variant">{hint}</span>}
+        {options && options.length === 0 && (
+          <span className="mt-1 block text-xs font-normal text-red-700">
+            No published items yet. Publish a course or ebook first.
+          </span>
+        )}
+      </label>
+    );
+  }
+
   if (type === "image") {
     return (
       <label className="block text-sm font-medium">

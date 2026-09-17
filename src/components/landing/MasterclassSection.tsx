@@ -11,7 +11,7 @@ type Props = {
   listPrice?: string;
   price?: string;
   cta?: string;
-  ctaHref?: string;
+  href?: string;
   features?: string[];
 };
 
@@ -23,7 +23,7 @@ export function MasterclassSection({
   listPrice,
   price,
   cta,
-  ctaHref,
+  href,
   features = [
     "4+ Hours of On-Demand HD Video",
     "Lifetime Access & Free Updates",
@@ -31,6 +31,7 @@ export function MasterclassSection({
     "Ready-to-use Wealth Calculators",
   ],
 }: Props = {}) {
+  const link = href || "/learn";
   return (
     <section className="py-xl" id="learn">
       <div className="site-container">
@@ -44,12 +45,13 @@ export function MasterclassSection({
             />
             <div className="absolute inset-0 bg-gradient-to-r from-secondary to-transparent" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <button
-                type="button"
+              <Link
+                href={link}
                 className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-2xl transition-transform hover:scale-110 sm:h-20 sm:w-20"
+                aria-label="Open course"
               >
                 <MaterialIcon name="play_arrow" size={36} filled />
-              </button>
+              </Link>
             </div>
           </div>
           <div className="flex flex-col justify-center space-y-md p-6 sm:p-8 lg:w-1/2 lg:p-xl">
@@ -74,14 +76,16 @@ export function MasterclassSection({
             </ul>
             <div className="flex flex-col gap-4 pt-md sm:flex-row sm:items-center sm:gap-lg">
               <div>
-                <span className="block text-label-sm text-secondary-fixed-dim line-through">{listPrice || "NPR 4,999"}</span>
-                <span className="text-2xl font-bold text-white sm:text-display-md">{price || "NPR 1,999"}</span>
+                {listPrice ? (
+                  <span className="block text-label-sm text-secondary-fixed-dim line-through">{listPrice}</span>
+                ) : null}
+                <span className="text-2xl font-bold text-white sm:text-display-md">{price || "Free"}</span>
               </div>
               <Link
-                href={ctaHref || "/ebooks"}
+                href={link}
                 className="emerald-gradient rounded-xl py-3 text-center font-label-md text-white transition-all hover:brightness-110 sm:flex-1 sm:py-md"
               >
-                {cta || "Get the Ebook"}
+                {cta || "View course"}
               </Link>
             </div>
           </div>
