@@ -86,28 +86,33 @@ async function legacyContent() {
 }
 
 export async function ensureCmsSeeded(userId?: string) {
-  const existing = await prisma.cmsEntry.findMany({ select: { key: true } });
-  const have = new Set(existing.map((row) => row.key));
-  const missing = CMS_DEFINITIONS.filter((definition) => !have.has(definition.key));
-  if (!missing.length) return;
+  try {
+    const existing = await prisma.cmsEntry.findMany({ select: { key: true } });
+    const have = new Set(existing.map((row) => row.key));
+    const missing = CMS_DEFINITIONS.filter((definition) => !have.has(definition.key));
+    if (!missing.length) return;
 
-  const content = await legacyContent();
-  await prisma.cmsEntry.createMany({
-    data: missing.map((definition) => ({
-      kind: definition.kind,
-      key: definition.key,
-      parentKey: definition.parentKey,
-      label: definition.label,
-      placement: definition.placement,
-      groupName: definition.groupName,
-      sortOrder: definition.sortOrder,
-      enabled: definition.enabled,
-      status: "PUBLISHED" as const,
-      data: { ...definition.data, ...legacyOverlay(definition.key, content) },
-      updatedById: userId,
-    })),
-    skipDuplicates: true,
-  });
+    const content = await legacyContent();
+    await prisma.cmsEntry.createMany({
+      data: missing.map((definition) => ({
+        kind: definition.kind,
+        key: definition.key,
+        parentKey: definition.parentKey,
+        label: definition.label,
+        placement: definition.placement,
+        groupName: definition.groupName,
+        sortOrder: definition.sortOrder,
+        enabled: definition.enabled,
+        status: "PUBLISHED" as const,
+        data: { ...definition.data, ...legacyOverlay(definition.key, content) },
+        updatedById: userId,
+      })),
+      skipDuplicates: true,
+    });
+  } catch (error) {
+    // DB down / table missing — callers with fallbacks keep working.
+    console.error("CMS seed skipped:", error);
+  }
 }
 
 function decorate(row: {

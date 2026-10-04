@@ -202,42 +202,54 @@ export const CMS_DEFINITIONS: CmsDefinition[] = [
   item("site.nav.home", "site.nav", "Home", "Main menu", "Menu & footer", 1, linkFields, { label: "Home", href: "/" }),
   item("site.nav.ebooks", "site.nav", "Ebook", "Main menu", "Menu & footer", 2, linkFields, { label: "Ebook", href: "/ebooks" }),
   item("site.nav.learn", "site.nav", "Courses", "Main menu", "Menu & footer", 3, linkFields, { label: "Courses", href: "/learn" }),
-  item("site.nav.newsletter", "site.nav", "Newsletter", "Main menu", "Menu & footer", 4, linkFields, {
+  item("site.nav.tools", "site.nav", "Tools", "Main menu", "Menu & footer", 4, linkFields, {
+    label: "Tools",
+    href: "/tools",
+  }),
+  item("site.nav.newsletter", "site.nav", "Newsletter", "Main menu", "Menu & footer", 5, linkFields, {
     label: "Newsletter",
     href: "/newsletter",
   }),
-  item("site.nav.community", "site.nav", "Community", "Main menu", "Menu & footer", 5, linkFields, {
+  item("site.nav.community", "site.nav", "Community", "Main menu", "Menu & footer", 6, linkFields, {
     label: "Community",
     href: "/community",
   }),
-  item("site.nav.blog", "site.nav", "Blog", "Main menu", "Menu & footer", 6, linkFields, { label: "Blog", href: "/blog" }),
+  item("site.nav.blog", "site.nav", "Blog", "Main menu", "Menu & footer", 7, linkFields, { label: "Blog", href: "/blog" }),
   section("site.footer.quick", "Footer quick links", "Footer column", "Menu & footer", 2, [text("heading", "Heading")], { heading: "Quick Links" }, linkFields),
   item("site.footer.quick.home", "site.footer.quick", "Home", "Footer quick links", "Menu & footer", 1, linkFields, { label: "Home", href: "/" }),
   item("site.footer.quick.ebook", "site.footer.quick", "NEPSE Ebook", "Footer quick links", "Menu & footer", 2, linkFields, {
     label: "NEPSE Ebook",
     href: "/ebooks",
   }),
-  item("site.footer.quick.newsletter", "site.footer.quick", "Newsletter", "Footer quick links", "Menu & footer", 3, linkFields, {
+  item("site.footer.quick.tools", "site.footer.quick", "Tools", "Footer quick links", "Menu & footer", 3, linkFields, {
+    label: "Tools",
+    href: "/tools",
+  }),
+  item("site.footer.quick.newsletter", "site.footer.quick", "Newsletter", "Footer quick links", "Menu & footer", 4, linkFields, {
     label: "Newsletter",
     href: "/newsletter",
   }),
-  item("site.footer.quick.community", "site.footer.quick", "Community", "Footer quick links", "Menu & footer", 4, linkFields, {
+  item("site.footer.quick.community", "site.footer.quick", "Community", "Footer quick links", "Menu & footer", 5, linkFields, {
     label: "Community",
     href: "/community",
   }),
-  item("site.footer.quick.blog", "site.footer.quick", "Blog", "Footer quick links", "Menu & footer", 5, linkFields, { label: "Blog", href: "/blog" }),
+  item("site.footer.quick.blog", "site.footer.quick", "Blog", "Footer quick links", "Menu & footer", 6, linkFields, { label: "Blog", href: "/blog" }),
   section("site.footer.resources", "Footer resources", "Footer column", "Menu & footer", 3, [text("heading", "Heading")], { heading: "Resources" }, linkFields),
-  item("site.footer.resources.subscribe", "site.footer.resources", "Subscribe", "Footer resources", "Menu & footer", 1, linkFields, {
+  item("site.footer.resources.tools", "site.footer.resources", "Calculators", "Footer resources", "Menu & footer", 1, linkFields, {
+    label: "Financial calculators",
+    href: "/tools",
+  }),
+  item("site.footer.resources.subscribe", "site.footer.resources", "Subscribe", "Footer resources", "Menu & footer", 2, linkFields, {
     label: "Subscribe newsletter",
     href: "/newsletter",
   }),
-  item("site.footer.resources.read", "site.footer.resources", "Start reading", "Footer resources", "Menu & footer", 2, linkFields, {
+  item("site.footer.resources.read", "site.footer.resources", "Start reading", "Footer resources", "Menu & footer", 3, linkFields, {
     label: "Start reading",
     href: "/ebooks",
   }),
-  item("site.footer.resources.blog", "site.footer.resources", "Blog", "Footer resources", "Menu & footer", 3, linkFields, { label: "Blog", href: "/blog" }),
-  item("site.footer.resources.login", "site.footer.resources", "Login", "Footer resources", "Menu & footer", 4, linkFields, { label: "Login", href: "/login" }),
-  item("site.footer.resources.signup", "site.footer.resources", "Sign up", "Footer resources", "Menu & footer", 5, linkFields, { label: "Sign up", href: "/signup" }),
+  item("site.footer.resources.blog", "site.footer.resources", "Blog", "Footer resources", "Menu & footer", 4, linkFields, { label: "Blog", href: "/blog" }),
+  item("site.footer.resources.login", "site.footer.resources", "Login", "Footer resources", "Menu & footer", 5, linkFields, { label: "Login", href: "/login" }),
+  item("site.footer.resources.signup", "site.footer.resources", "Sign up", "Footer resources", "Menu & footer", 6, linkFields, { label: "Sign up", href: "/signup" }),
   section("site.footer.legal", "Footer legal links", "Bottom of the footer", "Menu & footer", 4, [], {}, linkFields),
   item("site.footer.legal.privacy", "site.footer.legal", "Privacy", "Footer legal links", "Menu & footer", 1, linkFields, { label: "Privacy Policy", href: "#" }),
   item("site.footer.legal.terms", "site.footer.legal", "Terms", "Footer legal links", "Menu & footer", 2, linkFields, { label: "Terms", href: "#" }),

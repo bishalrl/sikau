@@ -52,7 +52,9 @@ async function safeQuery<T>(query: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await query();
   } catch (error) {
-    console.error("Repository query failed; using fallback.", error);
+    // Log as a string so Next.js does not open a "Console Error" overlay for recovered failures.
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Repository query failed; using fallback. ${message.split("\n")[0]}`);
     return fallback;
   }
 }

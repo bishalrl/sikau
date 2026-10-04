@@ -22,12 +22,14 @@ type Props = {
 const quickLinks = [
   { label: "Home", href: "/" },
   { label: "NEPSE Ebook", href: "/ebooks" },
+  { label: "Tools", href: "/tools" },
   { label: "Newsletter", href: "/newsletter" },
   { label: "Community", href: "/community" },
   { label: "Blog", href: "/blog" },
 ];
 
 const resourceLinks = [
+  { label: "Financial calculators", href: "/tools" },
   { label: "Subscribe newsletter", href: "/newsletter" },
   { label: "Start reading", href: "/ebooks" },
   { label: "Blog", href: "/blog" },

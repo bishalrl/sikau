@@ -110,12 +110,40 @@ function isMissingPlanSchemaError(error: unknown) {
   );
 }
 
+function isDbUnavailableError(error: unknown) {
+  const text = [
+    error instanceof Error ? error.message : "",
+    typeof error === "object" && error && "code" in error ? String((error as { code?: string }).code) : "",
+    String(error),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    text.includes("econnrefused") ||
+    text.includes("etimedout") ||
+    text.includes("p1001") ||
+    text.includes("can't reach database") ||
+    text.includes("cannot reach database")
+  );
+}
+
 /** Load product without joining plans, then attach plans (or fallbacks). */
 async function findNewsletterProductWithPlans(): Promise<NewsletterProductView | null> {
-  const product = await prisma.newsletterProduct.findFirst({
-    include: { community: true },
-    orderBy: { createdAt: "asc" },
-  });
+  let product;
+  try {
+    product = await prisma.newsletterProduct.findFirst({
+      include: { community: true },
+      orderBy: { createdAt: "asc" },
+    });
+  } catch (error) {
+    if (isDbUnavailableError(error)) {
+      console.error("Newsletter database unavailable:", error);
+      return null;
+    }
+    throw error;
+  }
+
   if (!product) return null;
 
   try {
@@ -304,16 +332,24 @@ export async function ensureNewsletterProduct(adminUserId?: string): Promise<New
 }
 
 export async function getActiveNewsletterProduct(): Promise<NewsletterProductView | null> {
-  let product = await findNewsletterProductWithPlans();
+  try {
+    let product = await findNewsletterProductWithPlans();
 
-  if (!product) {
-    product = await ensureNewsletterProduct();
-  } else if (!product.plans.length) {
-    const plans = await ensureNewsletterPlans(product.id);
-    product = { ...product, plans };
+    if (!product) {
+      product = await ensureNewsletterProduct();
+    } else if (!product.plans.length) {
+      const plans = await ensureNewsletterPlans(product.id);
+      product = { ...product, plans };
+    }
+
+    return product;
+  } catch (error) {
+    if (isDbUnavailableError(error)) {
+      console.error("Newsletter unavailable (database):", error);
+      return null;
+    }
+    throw error;
   }
-
-  return product;
 }
 
 export async function getNewsletterPlanByCode(productId: string, code: string) {

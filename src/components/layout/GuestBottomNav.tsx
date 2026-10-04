@@ -27,7 +27,7 @@ export function GuestBottomNav({ isLoggedIn = false }: Props) {
   const links = [
     { href: "/", icon: "home", label: "Home" },
     { href: "/ebooks", icon: "menu_book", label: "Ebook" },
-    { href: "/newsletter", icon: "mail", label: "News" },
+    { href: "/tools", icon: "calculate", label: "Tools" },
     { href: "/community", icon: "groups", label: "Community" },
     isLoggedIn
       ? { href: "/learn", icon: "school", label: "Courses" }
