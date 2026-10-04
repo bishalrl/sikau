@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
+import { BackNav } from "@/components/ui/BackNav";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -81,10 +81,13 @@ export function EbookPdfReader({ title, titleNe, fileHref, backHref, allowDownlo
 
       <header className="pdf-reader__toolbar">
         <div className="site-container pdf-reader__toolbar-inner">
-          <Link href={backHref} className="pdf-reader__back">
-            <MaterialIcon name="arrow_back" className="text-[18px]" />
-            Back
-          </Link>
+          <BackNav
+            href={backHref}
+            label="Back"
+            className="pdf-reader__back"
+            preferHistory={false}
+            icon={<MaterialIcon name="arrow_back" className="text-[18px]" />}
+          />
 
           <div className="pdf-reader__pager">
             <button

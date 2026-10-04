@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { EbookReceiptForm } from "@/components/ebooks/EbookReceiptForm";
+import { BackNav } from "@/components/ui/BackNav";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ebookHasCommunityOffer, resolvePurchaseAmount } from "@/lib/ebook-offer";
@@ -59,9 +59,12 @@ export default async function EbookPayPage({ params, searchParams }: Props) {
 
   return (
     <div className="site-container py-xl">
-      <Link href={`/ebooks/${ebook.slug}#access`} className="text-sm font-medium text-primary">
-        ← Back to {ebook.title}
-      </Link>
+      <BackNav
+        href={`/ebooks/${ebook.slug}#access`}
+        label={`Back to ${ebook.title}`}
+        className="text-sm font-medium text-primary"
+        preferHistory={false}
+      />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="p-5 sm:p-8">

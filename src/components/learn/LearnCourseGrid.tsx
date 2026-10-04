@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { CourseOfferHighlights } from "@/components/learn/CourseOfferHighlights";
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -106,9 +107,6 @@ export function LearnCourseGrid({ courses, categories, copy }: Props) {
                   </Link>
                 </h3>
                 <p className="font-label-sm text-primary">{course.titleNe}</p>
-                <p className="mt-sm line-clamp-2 font-body-md text-on-surface-variant">
-                  {course.description}
-                </p>
                 <div className="mt-md flex flex-wrap items-center gap-md font-label-sm text-on-surface-variant">
                   <span className="inline-flex items-center gap-1">
                     <MaterialIcon name="schedule" className="text-[16px]" />
@@ -118,10 +116,12 @@ export function LearnCourseGrid({ courses, categories, copy }: Props) {
                     <MaterialIcon name="group" className="text-[16px]" />
                     {course.students.toLocaleString()}
                   </span>
-                  <span className="inline-flex items-center gap-1">
-                    <MaterialIcon name="star" className="text-[16px] text-tertiary-container" filled />
-                    {course.rating}
-                  </span>
+                  {course.rating > 0 && (
+                    <span className="inline-flex items-center gap-1">
+                      <MaterialIcon name="star" className="text-[16px] text-tertiary-container" filled />
+                      {course.rating}
+                    </span>
+                  )}
                 </div>
                 {course.progress !== undefined && (
                   <div className="mt-md">
@@ -141,9 +141,14 @@ export function LearnCourseGrid({ courses, categories, copy }: Props) {
                     Complete payment
                   </Button>
                 ) : (
-                  <Button size="sm" className="mt-md w-full" href={`/learn/${course.slug}`}>
-                    View course
-                  </Button>
+                  <CourseOfferHighlights
+                    compact
+                    description={course.description}
+                    includes={course.includes}
+                    priceNpr={course.priceNpr}
+                    href={`/learn/${course.slug}`}
+                    cta="View course"
+                  />
                 )}
               </div>
             </Card>

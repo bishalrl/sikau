@@ -5,6 +5,7 @@ import {
 } from "@/components/learn/LearnMasterclassCurriculum";
 import { LearnMasterclassFeatured } from "@/components/learn/LearnMasterclassFeatured";
 import { getPublicCms } from "@/lib/cms/public";
+import { parseCourseIncludes } from "@/lib/course-includes";
 import {
   getCourseBySlug,
   getHomepagePromoCourse,
@@ -45,12 +46,15 @@ export default async function LearnPage() {
       ? `/study/${featuredDetail.slug}/${previewLesson.slug}`
       : null;
 
-  const includes = (featured?.data.includes || "")
+  const cmsIncludes = (featured?.data.includes || "")
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const features = featured?.items.map((item) => item.data.text).filter(Boolean) ?? [];
+  const courseIncludes = parseCourseIncludes(featuredDetail?.includesJson);
+  const cmsFeatures = featured?.items.map((item) => item.data.text).filter(Boolean) ?? [];
+  const includes = courseIncludes.length ? courseIncludes : cmsIncludes;
+  const features = courseIncludes.length ? courseIncludes : cmsFeatures;
 
   return (
     <div className="bg-background">

@@ -158,7 +158,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // Keep CommunityEbookLink in sync for bundle membership grants.
+    // Keep CommunityEbookLink aligned with the offer community (admin UI / metadata only).
+    // Membership grants use ebook.communityId, not every linked community.
     await prisma.communityEbookLink.deleteMany({ where: { ebookId: ebook.id } });
     if (communityOfferEnabled && communityId) {
       await prisma.communityEbookLink.create({

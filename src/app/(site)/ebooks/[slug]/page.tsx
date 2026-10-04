@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { EbookProductDetail } from "@/components/ebooks/EbookProductDetail";
+import { BackNav } from "@/components/ui/BackNav";
 import {
   LEGACY_NEPSE_BUNDLE_SLUG,
   CANONICAL_NEPSE_EBOOK_SLUG,
@@ -38,9 +38,7 @@ export default async function EbookDetailPage({
         <p className="mt-2 text-sm text-on-surface-variant">
           In Admin → Ebooks, open it and set Status to <strong>Published</strong> (or click Publish).
         </p>
-        <Link href="/ebooks" className="mt-6 inline-block text-sm font-medium text-primary">
-          ← Back to ebooks
-        </Link>
+        <BackNav href="/ebooks" label="Back to ebooks" className="mt-6 inline-block text-sm font-medium text-primary" />
       </div>
     );
   }

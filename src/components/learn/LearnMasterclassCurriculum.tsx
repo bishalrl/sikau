@@ -1,6 +1,7 @@
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { formatCourseDuration } from "@/lib/course-duration";
 
 type ModuleSummary = {
   title: string;
@@ -20,14 +21,6 @@ type Props = {
 
 function moneyLabel(priceNpr: number) {
   return priceNpr <= 0 ? "Free" : `NPR ${priceNpr.toLocaleString()}`;
-}
-
-function formatMinutes(total: number) {
-  if (total <= 0) return "Self-paced";
-  if (total < 60) return `${total} min`;
-  const hours = Math.floor(total / 60);
-  const mins = total % 60;
-  return mins ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
 export function LearnMasterclassCurriculum({
@@ -132,7 +125,7 @@ export function summarizeCourseModules(
     return {
       title: module.title,
       lessons: module.lessons.length,
-      duration: formatMinutes(minutes),
+      duration: formatCourseDuration(minutes),
     };
   });
 }

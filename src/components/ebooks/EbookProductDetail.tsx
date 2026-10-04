@@ -2,6 +2,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { EbookBuyButton } from "@/components/ebooks/EbookBuyButton";
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
+import { BackNav } from "@/components/ui/BackNav";
 import {
   DEFAULT_SOLO_FEATURES,
   accessTypeLabel,
@@ -68,9 +69,7 @@ export function EbookProductDetail({ ebook }: Props) {
   return (
     <div className="ebook-detail">
       <div className="site-container ebook-detail__wrap">
-        <Link href="/ebooks" className="ebook-detail__back">
-          ← All ebooks
-        </Link>
+        <BackNav href="/ebooks" label="All ebooks" className="ebook-detail__back" />
 
         <div className="ebook-detail__layout">
           <figure className="ebook-detail__cover">

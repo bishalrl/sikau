@@ -63,20 +63,133 @@ export function memberCanSend(
   return canUse(permissions[kind], role);
 }
 
-/** Upsert membership for communities granted by an approved community-bundle ebook order. */
+function isStaffRole(role: CommunityMemberRole) {
+  return roleRank(role) >= 2;
+}
+
+/**
+ * Communities this user has paid for.
+ * - Newsletter order → only that newsletter product's community
+ * - Ebook COMMUNITY_BUNDLE → only that ebook's offer communityId
+ * Never cross-grants via CommunityEbookLink fan-out.
+ */
+export async function getEntitledCommunityIds(userId: string): Promise<string[]> {
+  const [ebookOrders, newsletterOrders] = await Promise.all([
+    prisma.ebookOrder.findMany({
+      where: {
+        userId,
+        paymentStatus: PaymentStatus.APPROVED,
+        purchaseType: EbookPurchaseType.COMMUNITY_BUNDLE,
+        ebook: {
+          communityOfferEnabled: true,
+          communityId: { not: null },
+        },
+      },
+      select: {
+        ebook: {
+          select: {
+            communityId: true,
+            community: {
+              select: {
+                id: true,
+                status: true,
+                newsletterProduct: { select: { id: true } },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.newsletterOrder.findMany({
+      where: {
+        userId,
+        paymentStatus: PaymentStatus.APPROVED,
+        product: {
+          community: { status: CommunityStatus.ACTIVE },
+        },
+      },
+      select: {
+        product: { select: { communityId: true } },
+      },
+    }),
+  ]);
+
+  const ids = new Set<string>();
+
+  for (const order of ebookOrders) {
+    const community = order.ebook.community;
+    // Ebook bundles must not unlock newsletter communities.
+    if (
+      community &&
+      community.status === CommunityStatus.ACTIVE &&
+      !community.newsletterProduct
+    ) {
+      ids.add(community.id);
+    }
+  }
+
+  for (const order of newsletterOrders) {
+    ids.add(order.product.communityId);
+  }
+
+  return [...ids];
+}
+
+export async function userHasCommunityEntitlement(userId: string, communityId: string) {
+  const entitled = await getEntitledCommunityIds(userId);
+  return entitled.includes(communityId);
+}
+
+async function upsertMemberIfAllowed(communityId: string, userId: string) {
+  const community = await prisma.community.findFirst({
+    where: { id: communityId, status: CommunityStatus.ACTIVE },
+    select: { id: true },
+  });
+  if (!community) return null;
+
+  const existing = await prisma.communityMember.findUnique({
+    where: {
+      communityId_userId: { communityId, userId },
+    },
+  });
+
+  if (existing?.bannedAt) {
+    return existing;
+  }
+
+  return prisma.communityMember.upsert({
+    where: {
+      communityId_userId: { communityId, userId },
+    },
+    update: {},
+    create: {
+      communityId,
+      userId,
+      role: CommunityMemberRole.MEMBER,
+    },
+  });
+}
+
+/** Upsert membership for the single offer community granted by an approved community-bundle ebook order. */
 export async function ensureCommunityMembershipsForEbookOrder(orderId: string) {
   const order = await prisma.ebookOrder.findUnique({
     where: { id: orderId },
     select: {
       id: true,
       userId: true,
-      ebookId: true,
       purchaseType: true,
       paymentStatus: true,
       ebook: {
         select: {
           communityId: true,
           communityOfferEnabled: true,
+          community: {
+            select: {
+              id: true,
+              status: true,
+              newsletterProduct: { select: { id: true } },
+            },
+          },
         },
       },
     },
@@ -91,62 +204,21 @@ export async function ensureCommunityMembershipsForEbookOrder(orderId: string) {
     return [];
   }
 
-  const communityIds = new Set<string>();
-
-  if (order.ebook.communityOfferEnabled && order.ebook.communityId) {
-    communityIds.add(order.ebook.communityId);
+  if (!order.ebook.communityOfferEnabled || !order.ebook.communityId) {
+    return [];
   }
 
-  const links = await prisma.communityEbookLink.findMany({
-    where: {
-      ebookId: order.ebookId,
-      community: { status: CommunityStatus.ACTIVE },
-    },
-    select: { communityId: true },
-  });
-  for (const link of links) {
-    communityIds.add(link.communityId);
+  const community = order.ebook.community;
+  if (
+    !community ||
+    community.status !== CommunityStatus.ACTIVE ||
+    community.newsletterProduct
+  ) {
+    return [];
   }
 
-  const members = [];
-  for (const communityId of communityIds) {
-    const community = await prisma.community.findFirst({
-      where: { id: communityId, status: CommunityStatus.ACTIVE },
-      select: { id: true },
-    });
-    if (!community) continue;
-
-    const existing = await prisma.communityMember.findUnique({
-      where: {
-        communityId_userId: {
-          communityId,
-          userId: order.userId,
-        },
-      },
-    });
-
-    if (existing?.bannedAt) {
-      continue;
-    }
-
-    const member = await prisma.communityMember.upsert({
-      where: {
-        communityId_userId: {
-          communityId,
-          userId: order.userId,
-        },
-      },
-      update: {},
-      create: {
-        communityId,
-        userId: order.userId,
-        role: CommunityMemberRole.MEMBER,
-      },
-    });
-    members.push(member);
-  }
-
-  return members;
+  const member = await upsertMemberIfAllowed(community.id, order.userId);
+  return member ? [member] : [];
 }
 
 /** Grant read-only membership for an approved newsletter order. */
@@ -165,61 +237,33 @@ export async function ensureCommunityMembershipForNewsletterOrder(orderId: strin
     return null;
   }
 
-  const communityId = order.product.communityId;
-  const existing = await prisma.communityMember.findUnique({
-    where: {
-      communityId_userId: { communityId, userId: order.userId },
-    },
-  });
-
-  if (existing?.bannedAt) {
-    return existing;
-  }
-
-  return prisma.communityMember.upsert({
-    where: {
-      communityId_userId: { communityId, userId: order.userId },
-    },
-    update: {},
-    create: {
-      communityId,
-      userId: order.userId,
-      role: CommunityMemberRole.MEMBER,
-    },
-  });
+  return upsertMemberIfAllowed(order.product.communityId, order.userId);
 }
 
-/** Backfill memberships from approved ebook + newsletter purchases. */
+/** Backfill entitled memberships and remove stale MEMBER rows from over-grants. */
 export async function syncUserCommunityMemberships(userId: string) {
-  const [ebookOrders, newsletterOrders] = await Promise.all([
-    prisma.ebookOrder.findMany({
-      where: { userId, paymentStatus: PaymentStatus.APPROVED },
-      select: { id: true },
-    }),
-    prisma.newsletterOrder.findMany({
-      where: { userId, paymentStatus: PaymentStatus.APPROVED },
-      select: { id: true },
-    }),
-  ]);
+  const entitledIds = await getEntitledCommunityIds(userId);
 
-  for (const order of ebookOrders) {
-    await ensureCommunityMembershipsForEbookOrder(order.id);
+  for (const communityId of entitledIds) {
+    await upsertMemberIfAllowed(communityId, userId);
   }
-  for (const order of newsletterOrders) {
-    await ensureCommunityMembershipForNewsletterOrder(order.id);
-  }
+
+  // Drop regular member rows the user is no longer entitled to.
+  // Keep ADMIN / MODERATOR (staff) memberships intact.
+  await prisma.communityMember.deleteMany({
+    where: {
+      userId,
+      role: CommunityMemberRole.MEMBER,
+      bannedAt: null,
+      ...(entitledIds.length > 0
+        ? { communityId: { notIn: entitledIds } }
+        : {}),
+    },
+  });
 }
 
-export async function assertCommunityMember(
-  userId: string,
-  communityId: string,
-  options?: { allowBanned?: boolean },
-): Promise<
-  CommunityMember & {
-    community: { permissions: string; status: CommunityStatus; slug: string; name: string };
-  }
-> {
-  const member = await prisma.communityMember.findUnique({
+async function loadCommunityMember(userId: string, communityId: string) {
+  return prisma.communityMember.findUnique({
     where: {
       communityId_userId: { communityId, userId },
     },
@@ -234,6 +278,24 @@ export async function assertCommunityMember(
       },
     },
   });
+}
+
+export async function assertCommunityMember(
+  userId: string,
+  communityId: string,
+  options?: { allowBanned?: boolean },
+): Promise<
+  CommunityMember & {
+    community: { permissions: string; status: CommunityStatus; slug: string; name: string };
+  }
+> {
+  let member = await loadCommunityMember(userId, communityId);
+
+  // Backfill if they paid but never got a membership row yet.
+  if (!member) {
+    await syncUserCommunityMemberships(userId);
+    member = await loadCommunityMember(userId, communityId);
+  }
 
   if (!member) {
     throw new CommunityAccessError("You are not a member of this community.", 403);
@@ -245,6 +307,15 @@ export async function assertCommunityMember(
 
   if (member.bannedAt && !options?.allowBanned) {
     throw new CommunityAccessError("You are banned from this community.", 403);
+  }
+
+  // Staff keep access; paid members must still hold a live entitlement for this community.
+  if (!isStaffRole(member.role)) {
+    const entitled = await userHasCommunityEntitlement(userId, communityId);
+    if (!entitled) {
+      await prisma.communityMember.delete({ where: { id: member.id } }).catch(() => null);
+      throw new CommunityAccessError("You are not a member of this community.", 403);
+    }
   }
 
   return member;

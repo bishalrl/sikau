@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CheckCircle2, Circle, PlayCircle } from "lucide-react";
+import { BackNav } from "@/components/ui/BackNav";
 import { Button } from "@/components/ui/Button";
 import { assertStudyAccess, findResumeLessonSlug, flattenLessons } from "@/lib/study-access";
 import { getCourseBySlug } from "@/lib/repositories";
@@ -38,6 +39,11 @@ export default async function StudyCoursePage({
 
   return (
     <div className="site-container py-xl">
+      <BackNav
+        href={`/learn/${course.slug}`}
+        label="Back to course page"
+        className="mb-4 inline-flex text-sm font-semibold text-primary"
+      />
       <div className="study-overview">
         <section className="study-overview__hero">
           <p className="study-overview__eyebrow">Course home</p>

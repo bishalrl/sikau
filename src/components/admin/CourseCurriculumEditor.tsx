@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, FileText, Plus, Trash2, Video } from "lucide-react";
 import { MarkdownEditor } from "@/components/admin/MarkdownEditor";
 import { Button } from "@/components/ui/Button";
+import {
+  isPlaceholderLessonDuration,
+  readVideoDurationMinutes,
+} from "@/lib/course-duration";
 import { uploadCourseAssetToR2 } from "@/lib/r2-browser-upload";
 
 export type EditorAsset = {
@@ -63,7 +67,7 @@ export function createEmptyLesson(partial?: Partial<EditorLesson>): EditorLesson
     summary: partial?.summary ?? "",
     content: partial?.content ?? "",
     type: partial?.type ?? "VIDEO",
-    durationMins: partial?.durationMins ?? 10,
+    durationMins: partial?.durationMins ?? 0,
     isPreview: partial?.isPreview ?? false,
     assets: partial?.assets ?? [],
   };
@@ -165,6 +169,8 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
           ? "IMAGE"
           : "FILE";
 
+      const videoMinutes = kind === "VIDEO" ? await readVideoDurationMinutes(file) : 0;
+
       const asset: EditorAsset = {
         storagePath: uploaded.storagePath,
         mimeType: uploaded.mimeType,
@@ -179,9 +185,12 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
             ...module,
             lessons: module.lessons.map((lesson) => {
               if (lesson.key !== lessonKey) return lesson;
+              const shouldSetDuration =
+                videoMinutes > 0 && isPlaceholderLessonDuration(lesson.durationMins);
               return {
                 ...lesson,
                 type: kind === "VIDEO" ? "VIDEO" : lesson.type,
+                durationMins: shouldSetDuration ? videoMinutes : lesson.durationMins,
                 assets: [...lesson.assets, asset],
               };
             }),
@@ -317,6 +326,10 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
                     percent={uploadPercent}
                     status={uploadStatus}
                     onUpload={(file) => uploadAsset(module.key, lesson.key, file)}
+                    onVideoDuration={(minutes) => {
+                      if (!isPlaceholderLessonDuration(lesson.durationMins)) return;
+                      updateLesson(module.key, lesson.key, { durationMins: minutes });
+                    }}
                     onRemove={(index) =>
                       updateLesson(module.key, lesson.key, {
                         assets: lesson.assets.filter((_, assetIndex) => assetIndex !== index),
@@ -368,13 +381,14 @@ export function CourseCurriculumEditor({ modules, onChange, message }: Props) {
                               Length (minutes)
                               <input
                                 type="number"
-                                min={1}
-                                value={lesson.durationMins}
+                                min={0}
+                                value={lesson.durationMins || ""}
                                 onChange={(event) =>
                                   updateLesson(module.key, lesson.key, {
-                                    durationMins: Number(event.target.value) || 1,
+                                    durationMins: Math.max(0, Number(event.target.value) || 0),
                                   })
                                 }
+                                placeholder="Auto from video"
                                 className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-3 py-2.5"
                               />
                             </label>
@@ -457,6 +471,7 @@ function LessonVideoUpload({
   percent,
   status,
   onUpload,
+  onVideoDuration,
   onRemove,
 }: {
   assets: EditorAsset[];
@@ -464,6 +479,7 @@ function LessonVideoUpload({
   percent: number;
   status?: string;
   onUpload: (file: File | null) => Promise<void>;
+  onVideoDuration?: (minutes: number) => void;
   onRemove: (index: number) => void;
 }) {
   const videos = assets.map((asset, index) => ({ asset, index })).filter((item) => isVideoAsset(item.asset));
@@ -503,7 +519,17 @@ function LessonVideoUpload({
       {videos.map(({ asset, index }) => (
         <div key={`${asset.storagePath}-${index}`} className="overflow-hidden rounded-2xl border border-outline-variant/30">
           {preview[asset.storagePath] ? (
-            <video controls playsInline className="max-h-56 w-full bg-black" src={preview[asset.storagePath]} />
+            <video
+              controls
+              playsInline
+              className="max-h-56 w-full bg-black"
+              src={preview[asset.storagePath]}
+              onLoadedMetadata={(event) => {
+                const seconds = event.currentTarget.duration;
+                if (!Number.isFinite(seconds) || seconds <= 0) return;
+                onVideoDuration?.(Math.max(1, Math.round(seconds / 60)));
+              }}
+            />
           ) : (
             <p className="px-4 py-6 text-sm text-on-surface-variant">Loading video…</p>
           )}

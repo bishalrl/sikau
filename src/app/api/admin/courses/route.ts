@@ -12,7 +12,7 @@ const lessonSchema = z.object({
   summary: z.string().optional(),
   content: z.string().optional(),
   type: z.nativeEnum(LessonType).default(LessonType.READING),
-  durationMins: z.coerce.number().min(1).default(10),
+  durationMins: z.coerce.number().min(0).default(0),
   isPreview: z.boolean().default(false),
   assets: z
     .array(
@@ -60,6 +60,7 @@ const courseSchema = z.object({
   instructorName: z.string().min(1),
   priceNpr: z.coerce.number().min(0).default(0),
   paymentInstructions: z.string().optional(),
+  includes: z.array(z.string().min(1)).default([]),
   featured: z.boolean().default(false),
   durationText: z.string().optional(),
   status: z.nativeEnum(CourseStatus).default(CourseStatus.DRAFT),
@@ -117,6 +118,7 @@ export async function POST(request: Request) {
               instructorName: input.instructorName,
               priceNpr: input.priceNpr,
               paymentInstructions: input.paymentInstructions,
+              includesJson: JSON.stringify(input.includes),
               featured: input.featured,
               durationText: input.durationText,
               status: session.user.role === "ADMIN" ? input.status : CourseStatus.PENDING_REVIEW,
@@ -143,6 +145,7 @@ export async function POST(request: Request) {
               instructorName: input.instructorName,
               priceNpr: input.priceNpr,
               paymentInstructions: input.paymentInstructions,
+              includesJson: JSON.stringify(input.includes),
               featured: input.featured,
               durationText: input.durationText,
               instructorId: session.user.id,

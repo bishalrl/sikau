@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ReceiptUploadForm } from "@/components/payment/ReceiptUploadForm";
+import { BackNav } from "@/components/ui/BackNav";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -43,9 +43,12 @@ export default async function PaymentPage({
   return (
     <div className="site-container py-xl">
       <div className="mb-6">
-        <Link href={`/learn/${course.slug}`} className="text-sm font-medium text-primary">
-          ← Back to course
-        </Link>
+        <BackNav
+          href={`/learn/${course.slug}`}
+          label="Back to course"
+          className="text-sm font-medium text-primary"
+          preferHistory={false}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">

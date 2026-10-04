@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import Link from "next/link";
 import { MaterialIcon } from "@/components/landing/MaterialIcon";
+import { BackNav } from "@/components/ui/BackNav";
 
 type Props = {
   title: string;
@@ -36,10 +36,13 @@ export function EbookReader({ title, titleNe, content, backHref, downloadHref }:
 
       <header className="ebook-reader__toolbar">
         <div className="site-container ebook-reader__toolbar-inner">
-          <Link href={backHref} className="ebook-reader__back">
-            <MaterialIcon name="arrow_back" className="text-[18px]" />
-            Back
-          </Link>
+          <BackNav
+            href={backHref}
+            label="Back"
+            className="ebook-reader__back"
+            preferHistory={false}
+            icon={<MaterialIcon name="arrow_back" className="text-[18px]" />}
+          />
 
           <div className="ebook-reader__controls">
             <button

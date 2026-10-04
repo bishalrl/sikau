@@ -16,6 +16,7 @@ import { RoadmapSection } from "@/components/landing/RoadmapSection";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { HomepageReviewsSection } from "@/components/landing/HomepageReviewsSection";
 import { TrustMarquee } from "@/components/landing/TrustMarquee";
+import { parseCourseIncludes } from "@/lib/course-includes";
 import {
   getHomepagePromoCourse,
   getHomepagePromoEbook,
@@ -72,6 +73,13 @@ export default async function HomePage() {
       ? getHomepagePromoEbook(ebookPromo?.data.ebookSlug || undefined)
       : Promise.resolve(null),
   ]);
+
+  const featuredCourseIncludes = parseCourseIncludes(featuredCourse?.includesJson);
+  const masterclassCmsFeatures =
+    masterclass?.items.map((item) => item.data.text).filter(Boolean) ?? [];
+  const masterclassFeatures = featuredCourseIncludes.length
+    ? featuredCourseIncludes
+    : masterclassCmsFeatures;
 
   const sessions = [...liveSessions]
     .sort((a, b) => {
@@ -137,7 +145,7 @@ export default async function HomePage() {
             price={masterclass?.data.price || moneyLabel(featuredCourse.priceNpr)}
             cta={masterclass?.data.cta || "View course"}
             href={`/learn/${featuredCourse.slug}`}
-            features={masterclass?.items.map((item) => item.data.text).filter(Boolean)}
+            features={masterclassFeatures}
           />
         )}
         {ebookPromo?.enabled !== false && featuredEbook && (

@@ -1,4 +1,6 @@
 import { CourseStatus, PaymentStatus, Prisma } from "@prisma/client";
+import { resolveCourseDuration } from "@/lib/course-duration";
+import { parseCourseIncludes } from "@/lib/course-includes";
 import { prisma } from "@/lib/prisma";
 import { defaultWebsiteContent } from "@/lib/site-defaults";
 import { categories, courses as fallbackCourses, dashboardStats, masterclassModules } from "@/lib/data";
@@ -24,6 +26,8 @@ export type CourseCard = {
   instructor: string;
   featured: boolean;
   image: string;
+  priceNpr: number;
+  includes: string[];
   paymentStatus: PaymentStatus | null;
 };
 
@@ -61,6 +65,8 @@ function fallbackCourseCards(): CourseCard[] {
     duration: course.duration,
     instructor: course.instructor,
     featured: course.featured ?? false,
+    priceNpr: 0,
+    includes: [],
     paymentStatus: null,
   }));
 }
@@ -184,7 +190,7 @@ export async function getPublishedCourses(userId?: string) {
           description: course.description,
           category: course.category,
           level: course.level,
-          duration: course.durationText ?? `${lessonCount} lessons`,
+          duration: resolveCourseDuration(lessons),
           lessons: lessonCount,
           progress,
           rating: course.rating,
@@ -192,6 +198,8 @@ export async function getPublishedCourses(userId?: string) {
           instructor: course.instructorName,
           featured: course.featured,
           image: course.image ?? "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=400&fit=crop",
+          priceNpr: course.priceNpr,
+          includes: parseCourseIncludes(course.includesJson),
           paymentStatus: enrollment?.paymentStatus ?? null,
         } satisfies CourseCard;
       });
@@ -318,17 +326,19 @@ export async function getDashboardData(user?: SessionUser | null) {
         description: enrollment.course.description,
         category: enrollment.course.category,
         level: enrollment.course.level,
-        duration: enrollment.course.durationText ?? `${lessons.length} lessons`,
+        duration: resolveCourseDuration(lessons),
         lessons: lessons.length,
         progress,
         rating: enrollment.course.rating,
         students: enrollment.course.studentsCount,
         instructor: enrollment.course.instructorName,
-          featured: enrollment.course.featured,
+        featured: enrollment.course.featured,
         image:
           enrollment.course.image ??
-            "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=400&fit=crop",
-          paymentStatus: enrollment.paymentStatus,
+          "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=400&fit=crop",
+        priceNpr: enrollment.course.priceNpr,
+        includes: parseCourseIncludes(enrollment.course.includesJson),
+        paymentStatus: enrollment.paymentStatus,
       } satisfies CourseCard;
     });
 

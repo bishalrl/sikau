@@ -1,4 +1,10 @@
-import { CommunityStatus, PaymentStatus, Prisma } from "@prisma/client";
+import {
+  CommunityMemberRole,
+  CommunityStatus,
+  EbookPurchaseType,
+  PaymentStatus,
+  Prisma,
+} from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { syncUserCommunityMemberships } from "@/lib/community-access";
 
@@ -231,14 +237,19 @@ export async function getPublishedEbooksForLinking() {
 }
 
 export async function userHasAnyCommunityMembership(userId: string) {
-  const approvedLinked = await prisma.ebookOrder.count({
+  const approvedBundle = await prisma.ebookOrder.count({
     where: {
       userId,
       paymentStatus: PaymentStatus.APPROVED,
-      ebook: { communityLinks: { some: {} } },
+      purchaseType: EbookPurchaseType.COMMUNITY_BUNDLE,
+      ebook: {
+        communityOfferEnabled: true,
+        communityId: { not: null },
+        community: { newsletterProduct: null },
+      },
     },
   });
-  if (approvedLinked > 0) return true;
+  if (approvedBundle > 0) return true;
 
   const approvedNewsletter = await prisma.newsletterOrder.count({
     where: { userId, paymentStatus: PaymentStatus.APPROVED },
@@ -246,7 +257,11 @@ export async function userHasAnyCommunityMembership(userId: string) {
   if (approvedNewsletter > 0) return true;
 
   const member = await prisma.communityMember.count({
-    where: { userId, bannedAt: null },
+    where: {
+      userId,
+      bannedAt: null,
+      role: { in: [CommunityMemberRole.ADMIN, CommunityMemberRole.MODERATOR] },
+    },
   });
   return member > 0;
 }

@@ -9,6 +9,13 @@ import {
   type EditorModule,
 } from "@/components/admin/CourseCurriculumEditor";
 import { Button } from "@/components/ui/Button";
+import { formatCourseDuration, totalLessonMinutes } from "@/lib/course-duration";
+import {
+  DEFAULT_COURSE_DESCRIPTION,
+  DEFAULT_COURSE_INCLUDES,
+  includesToText,
+  textToIncludes,
+} from "@/lib/course-includes";
 
 type ManagedCourse = {
   id: string;
@@ -26,6 +33,7 @@ type ManagedCourse = {
   instructorName: string;
   priceNpr: number;
   paymentInstructions: string | null;
+  includesJson?: string | null;
   featured: boolean;
   durationText: string | null;
   modules: Array<{
@@ -73,10 +81,13 @@ type FormState = {
   instructorName: string;
   priceNpr: string;
   paymentInstructions: string;
+  includesText: string;
   durationText: string;
   featured: boolean;
   status: string;
 };
+
+const DEFAULT_INCLUDES = DEFAULT_COURSE_INCLUDES.join("\n");
 
 const CATEGORIES = ["Personal Finance", "Investing", "NEPSE", "Business", "Mindset"];
 const LEVELS = ["Beginner", "Intermediate", "Advanced"];
@@ -100,7 +111,7 @@ function emptyForm(canPublish: boolean): FormState {
     slug: "",
     title: "",
     titleNe: "",
-    description: "",
+    description: DEFAULT_COURSE_DESCRIPTION,
     descriptionNe: "",
     category: "Personal Finance",
     level: "Beginner",
@@ -108,8 +119,9 @@ function emptyForm(canPublish: boolean): FormState {
     coverImage: "",
     paymentQrPath: "",
     instructorName: "",
-    priceNpr: "0",
+    priceNpr: "699",
     paymentInstructions: "Pay using the QR and upload your receipt for approval.",
+    includesText: DEFAULT_INCLUDES,
     durationText: "",
     featured: false,
     status: canPublish ? "PUBLISHED" : "PENDING_REVIEW",
@@ -191,7 +203,7 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [slugTouched, setSlugTouched] = useState(false);
   const [showNepali, setShowNepali] = useState(false);
-  const [isFree, setIsFree] = useState(true);
+  const [isFree, setIsFree] = useState(false);
 
   function note(text: string, tone: "ok" | "error" = "ok") {
     setMessage(text);
@@ -204,7 +216,7 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
     setEditingId(null);
     setSlugTouched(false);
     setShowNepali(false);
-    setIsFree(true);
+    setIsFree(false);
     setStep(1);
     setScreen("list");
     setMessage("");
@@ -216,7 +228,7 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
     setEditingId(null);
     setSlugTouched(false);
     setShowNepali(false);
-    setIsFree(true);
+    setIsFree(false);
     setStep(1);
     setScreen("editor");
     setMessage("");
@@ -240,6 +252,7 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
       priceNpr: String(course.priceNpr),
       paymentInstructions:
         course.paymentInstructions ?? "Pay using the QR and upload your receipt for approval.",
+      includesText: includesToText(course.includesJson),
       durationText: course.durationText ?? "",
       featured: course.featured,
       status: course.status,
@@ -305,10 +318,8 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
         throw new Error("Add at least one section with one lesson.");
       }
 
-      const minutes = modules.reduce(
-        (sum, module) => sum + module.lessons.reduce((lessonSum, lesson) => lessonSum + (lesson.durationMins || 0), 0),
-        0,
-      );
+      const minutes = totalLessonMinutes(modules);
+      const durationText = formatCourseDuration(minutes);
       const priceNpr = isFree ? 0 : Number(form.priceNpr) || 0;
       const slug = form.slug.trim() || slugify(form.title) || "course";
 
@@ -319,7 +330,8 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
           ...form,
           slug,
           priceNpr,
-          durationText: form.durationText || (minutes ? `${minutes} min` : undefined),
+          includes: textToIncludes(form.includesText),
+          durationText: durationText === "Self-paced" ? undefined : durationText,
           modules: modulesForApi(modules),
         }),
       });
@@ -346,8 +358,9 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
         instructorName: form.instructorName,
         priceNpr,
         paymentInstructions: form.paymentInstructions,
+        includesJson: JSON.stringify(textToIncludes(form.includesText)),
         featured: form.featured,
-        durationText: form.durationText || (minutes ? `${minutes} min` : null),
+        durationText: durationText === "Self-paced" ? null : durationText,
         modules: modules.map((module) => ({
           id: module.key,
           title: module.title,
@@ -569,10 +582,36 @@ export function CourseManager({ courses: initialCourses, canPublish }: Props) {
               value={form.description}
               onChange={(event) => setForm({ ...form, description: event.target.value })}
               rows={4}
-              placeholder="What will students be able to do after this course?"
+              placeholder={DEFAULT_COURSE_DESCRIPTION}
               className="mt-1 w-full rounded-xl border border-outline-variant/50 px-4 py-3"
             />
           </label>
+
+          <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary-container/5 p-4">
+            <p className="text-sm font-semibold">Course offer highlights</p>
+            <p className="text-sm text-on-surface-variant">
+              Unique per course. Shown with price and &quot;View course&quot; on the learn page and course
+              detail. One benefit per line.
+            </p>
+            <label className="block text-sm font-medium">
+              What students get
+              <textarea
+                value={form.includesText}
+                onChange={(event) => setForm({ ...form, includesText: event.target.value })}
+                rows={5}
+                placeholder={DEFAULT_INCLUDES}
+                className="mt-1 w-full rounded-xl border border-outline-variant/50 bg-white px-4 py-3 font-body-md"
+              />
+            </label>
+            <ul className="space-y-1 text-sm text-on-surface-variant">
+              {textToIncludes(form.includesText).map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <span className="text-primary">✓</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
           <CoverPicker path={cover} uploading={uploadingField === "cover"} onFile={(file) => void uploadImage(file, "cover")} />
 

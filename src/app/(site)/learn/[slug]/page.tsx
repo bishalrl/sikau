@@ -3,7 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EnrollButton } from "@/components/learn/EnrollButton";
 import { CmsImage } from "@/components/cms/CmsImage";
+import { MaterialIcon } from "@/components/landing/MaterialIcon";
+import { BackNav } from "@/components/ui/BackNav";
 import { Button } from "@/components/ui/Button";
+import { isPlaceholderLessonDuration, resolveCourseDuration } from "@/lib/course-duration";
+import { parseCourseIncludes } from "@/lib/course-includes";
 import { getCourseBySlug } from "@/lib/repositories";
 import { isElevatedRole } from "@/lib/roles";
 import { getCurrentSession } from "@/lib/session";
@@ -43,21 +47,16 @@ export default async function CourseDetailPage({ params }: Props) {
   const isFree = course.priceNpr <= 0;
   const cover = course.coverImage || course.image;
   const lessonCount = course.modules.reduce((sum, module) => sum + module.lessons.length, 0);
-  const minutes = course.modules.reduce(
-    (sum, module) => sum + module.lessons.reduce((lessonSum, lesson) => lessonSum + lesson.durationMins, 0),
-    0,
-  );
   const previewCount = course.modules.reduce(
     (sum, module) => sum + module.lessons.filter((lesson) => lesson.isPreview).length,
     0,
   );
+  const includes = parseCourseIncludes(course.includesJson);
 
   return (
     <div className="bg-surface pb-24 lg:pb-xl">
       <div className="site-container py-lg">
-        <Link href="/learn" className="text-sm font-medium text-primary">
-          ← All courses
-        </Link>
+        <BackNav href="/learn" label="All courses" className="text-sm font-medium text-primary" />
 
         <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-8">
@@ -95,7 +94,10 @@ export default async function CourseDetailPage({ params }: Props) {
                 <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <Fact label="Lessons" value={String(lessonCount)} />
                   <Fact label="Sections" value={String(course.modules.length)} />
-                  <Fact label="Length" value={course.durationText || (minutes ? `${minutes} min` : "Self-paced")} />
+                  <Fact
+                    label="Length"
+                    value={resolveCourseDuration(course.modules.flatMap((module) => module.lessons))}
+                  />
                   <Fact label="Price" value={isFree ? "Free" : `NPR ${course.priceNpr.toLocaleString()}`} />
                 </dl>
               </div>
@@ -130,7 +132,11 @@ export default async function CourseDetailPage({ params }: Props) {
                               )}
                             </span>
                             <span className="shrink-0 text-right text-xs text-on-surface-variant">
-                              <span className="block">{lesson.durationMins} min</span>
+                              <span className="block">
+                                {isPlaceholderLessonDuration(lesson.durationMins)
+                                  ? lesson.type
+                                  : `${lesson.durationMins} min`}
+                              </span>
                               <span className="mt-1 block font-semibold text-primary">
                                 {canPreview ? "Preview" : "Included"}
                               </span>
@@ -167,6 +173,7 @@ export default async function CourseDetailPage({ params }: Props) {
               status={status}
               paymentInstructions={course.paymentInstructions}
               lessonCount={lessonCount}
+              includes={includes}
             />
           </aside>
         </div>
@@ -195,6 +202,7 @@ function JoinCard({
   status,
   paymentInstructions,
   lessonCount,
+  includes,
 }: {
   courseSlug: string;
   isFree: boolean;
@@ -202,12 +210,26 @@ function JoinCard({
   status: string | null;
   paymentInstructions: string | null;
   lessonCount: number;
+  includes: string[];
 }) {
   return (
     <div className="rounded-3xl border border-outline-variant/30 bg-white p-5">
       <p className="text-sm text-on-surface-variant">{isFree ? "Free to join" : "One-time payment"}</p>
       <p className="mt-1 text-3xl font-bold text-on-background">{isFree ? "Free" : `NPR ${priceNpr.toLocaleString()}`}</p>
       <p className="mt-2 text-sm text-on-surface-variant">{lessonCount} lessons included after you join.</p>
+      {includes.length > 0 && (
+        <div className="mt-5">
+          <h3 className="font-headline-md text-on-background">What You&apos;ll Get</h3>
+          <ul className="mt-3 space-y-2">
+            {includes.map((item) => (
+              <li key={item} className="flex items-start gap-2 text-sm text-on-surface-variant">
+                <MaterialIcon name="check_circle" className="mt-0.5 shrink-0 text-primary" filled />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="mt-5 hidden lg:block">
         <JoinActions courseSlug={courseSlug} isFree={isFree} status={status} />
       </div>

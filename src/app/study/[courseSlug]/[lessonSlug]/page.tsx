@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { StudyPlayer } from "@/components/study/StudyPlayer";
+import { BackNav } from "@/components/ui/BackNav";
 import { resolveMediaUrl } from "@/lib/r2";
 import { assertStudyAccess, flattenLessons } from "@/lib/study-access";
 import { getCourseBySlug } from "@/lib/repositories";
@@ -77,9 +77,11 @@ export default async function StudyLessonPage({
   return (
     <div className="study-shell">
       <div className="study-shell__top">
-        <Link href={`/study/${course.slug}`} className="study-shell__back">
-          Course home
-        </Link>
+        <BackNav
+          href={`/study/${course.slug}`}
+          label="Back to course"
+          className="study-shell__back"
+        />
       </div>
       <StudyPlayer
         courseSlug={course.slug}

@@ -163,6 +163,7 @@ model Course {
   priceNpr            Int            @default(0)
   paymentQrPath       String?
   paymentInstructions String?
+  includesJson        String         @default("[]")
   status              CourseStatus   @default(DRAFT)
   featured            Boolean        @default(false)
   durationText        String?
@@ -205,7 +206,7 @@ model Lesson {
   content      String?
   type         LessonType       @default(READING)
   sortOrder    Int
-  durationMins Int              @default(10)
+  durationMins Int              @default(0)
   isPreview    Boolean          @default(false)
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt

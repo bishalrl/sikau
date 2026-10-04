@@ -4,6 +4,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { CheckCircle2, ChevronLeft, ChevronRight, Circle, PlayCircle } from "lucide-react";
 import { LessonCompleteButton } from "@/components/study/LessonCompleteButton";
+import { BackNav } from "@/components/ui/BackNav";
 import { Button } from "@/components/ui/Button";
 
 export type StudyOutlineModule = {
@@ -72,9 +73,11 @@ export function StudyPlayer({
     <div className="study-player">
       <aside className="study-player__sidebar">
         <div className="study-player__sidebar-head">
-          <Link href={`/study/${courseSlug}`} className="study-player__course-link">
-            {courseTitle}
-          </Link>
+          <BackNav
+            href={`/study/${courseSlug}`}
+            label={courseTitle}
+            className="study-player__course-link"
+          />
           <div className="study-player__progress-meta">
             <span>{progressPercent}% complete</span>
             <span>
