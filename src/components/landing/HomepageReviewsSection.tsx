@@ -78,7 +78,7 @@ export function HomepageReviewsSection({ title, description, reviews }: Props) {
   return (
     <section className="overflow-hidden bg-surface-container-low py-xl" id="reviews">
       <div className="site-container">
-        <div className="mb-lg flex flex-wrap items-end justify-between gap-4">
+        <div className="reveal mb-lg flex flex-wrap items-end justify-between gap-4">
           <div className="max-w-2xl">
             <h2 className="font-display-md text-display-md text-on-background">
               {title || "What learners say"}
@@ -93,7 +93,7 @@ export function HomepageReviewsSection({ title, description, reviews }: Props) {
               aria-label="Previous review"
               disabled={!canPrev}
               onClick={() => scrollByCard(-1)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/40 bg-white text-on-background disabled:opacity-40"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-outline-variant/40 bg-white text-on-background transition hover:-translate-y-0.5 disabled:opacity-40"
             >
               <ChevronLeft size={18} />
             </button>
@@ -102,7 +102,7 @@ export function HomepageReviewsSection({ title, description, reviews }: Props) {
               aria-label="Next review"
               disabled={!canNext}
               onClick={() => scrollByCard(1)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/40 bg-white text-on-background disabled:opacity-40"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-outline-variant/40 bg-white text-on-background transition hover:-translate-y-0.5 disabled:opacity-40"
             >
               <ChevronRight size={18} />
             </button>
@@ -125,7 +125,7 @@ export function HomepageReviewsSection({ title, description, reviews }: Props) {
             <article
               key={review.id}
               data-review-card
-              className="flex w-[min(100%,22rem)] shrink-0 snap-start flex-col rounded-3xl bg-white p-6 shadow-lg sm:w-[24rem]"
+              className="review-card flex w-[min(100%,22rem)] shrink-0 snap-start flex-col rounded-3xl bg-white p-6 shadow-lg sm:w-[24rem]"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-sm font-bold text-primary">
@@ -152,7 +152,7 @@ export function HomepageReviewsSection({ title, description, reviews }: Props) {
                 &quot;{review.body}&quot;
               </p>
               {review.imagePath && (
-                <div className="relative mt-4 aspect-[16/10] overflow-hidden rounded-2xl bg-surface-container">
+                <div className="media-zoom relative mt-4 aspect-[16/10] overflow-hidden rounded-2xl bg-surface-container">
                   <CmsImage src={review.imagePath} alt="" fill className="object-cover" />
                 </div>
               )}
@@ -161,8 +161,11 @@ export function HomepageReviewsSection({ title, description, reviews }: Props) {
         </div>
 
         <div className="mt-xl text-center">
-          <Link href="/review" className="text-sm font-semibold text-primary hover:underline">
-            Share your review
+          <Link href="/review" className="btn-arrow text-sm font-semibold text-primary">
+            <span>Share your review</span>
+            <span className="btn-arrow__icon" aria-hidden="true">
+              →
+            </span>
           </Link>
         </div>
       </div>

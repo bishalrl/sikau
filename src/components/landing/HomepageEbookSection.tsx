@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { CmsImage } from "@/components/cms/CmsImage";
 import { SITE_ASSETS } from "@/lib/site-assets";
-import { MaterialIcon } from "./MaterialIcon";
 
 type Props = {
   badge?: string;
@@ -29,9 +28,9 @@ export function HomepageEbookSection({
   return (
     <section className="pb-xl" id="ebook">
       <div className="site-container">
-        <div className="reveal active overflow-hidden rounded-3xl border border-outline-variant/30 bg-white">
+        <div className="reveal overflow-hidden rounded-3xl border border-outline-variant/30 bg-white">
           <div className="grid items-stretch lg:grid-cols-[280px_1fr]">
-            <div className="relative min-h-[220px] bg-surface-container">
+            <div className="media-zoom relative min-h-[220px] bg-surface-container">
               <CmsImage
                 src={image || SITE_ASSETS.cover}
                 alt={title || "Ebook cover"}
@@ -54,10 +53,12 @@ export function HomepageEbookSection({
                 </div>
                 <Link
                   href={href}
-                  className="emerald-gradient inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-center font-label-md text-white transition-all hover:brightness-110"
+                  className="btn-arrow emerald-gradient inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-center font-label-md text-white"
                 >
-                  {cta || "Get the ebook"}
-                  <MaterialIcon name="arrow_forward" />
+                  <span>{cta || "Get the ebook"}</span>
+                  <span className="btn-arrow__icon" aria-hidden="true">
+                    →
+                  </span>
                 </Link>
               </div>
             </div>

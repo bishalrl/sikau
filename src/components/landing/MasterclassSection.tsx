@@ -35,8 +35,8 @@ export function MasterclassSection({
   return (
     <section className="py-xl" id="learn">
       <div className="site-container">
-        <div className="reveal active flex flex-col overflow-hidden rounded-3xl bg-secondary lg:flex-row">
-          <div className="relative min-h-[220px] sm:min-h-[280px] lg:min-h-[400px] lg:w-1/2">
+        <div className="reveal flex flex-col overflow-hidden rounded-3xl bg-secondary lg:flex-row">
+          <div className="media-zoom relative min-h-[220px] sm:min-h-[280px] lg:min-h-[400px] lg:w-1/2">
             <CmsImage
               src={image || SITE_ASSETS.raju3}
               alt={imageAlt || "Financial charts on tablet"}
@@ -47,7 +47,7 @@ export function MasterclassSection({
             <div className="absolute inset-0 flex items-center justify-center">
               <Link
                 href={link}
-                className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-2xl transition-transform hover:scale-110 sm:h-20 sm:w-20"
+                className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-2xl transition-transform hover:scale-105 sm:h-20 sm:w-20"
                 aria-label="Open course"
               >
                 <MaterialIcon name="play_arrow" size={36} filled />
@@ -83,9 +83,12 @@ export function MasterclassSection({
               </div>
               <Link
                 href={link}
-                className="emerald-gradient rounded-xl py-3 text-center font-label-md text-white transition-all hover:brightness-110 sm:flex-1 sm:py-md"
+                className="btn-arrow emerald-gradient rounded-xl py-3 text-center font-label-md text-white sm:flex-1 sm:py-md"
               >
-                {cta || "View course"}
+                <span>{cta || "View course"}</span>
+                <span className="btn-arrow__icon" aria-hidden="true">
+                  →
+                </span>
               </Link>
             </div>
           </div>

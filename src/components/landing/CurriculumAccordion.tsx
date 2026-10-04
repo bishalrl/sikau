@@ -45,11 +45,11 @@ export function CurriculumAccordion({ title, description, modules: contentModule
   return (
     <section className="bg-surface-container py-xl">
       <div className="mx-auto max-w-3xl px-gutter">
-        <div className="reveal active mb-xl text-center">
+        <div className="reveal mb-xl text-center">
           <h2 className="font-display-md text-display-md text-on-background">{title || "Inside the Masterclass"}</h2>
           <p className="mt-sm text-on-surface-variant">{description || "7 Depth-Packed Modules. No filler content."}</p>
         </div>
-        <div className="reveal active space-y-md">
+        <div className="reveal space-y-md">
           {rows.map((mod, index) => (
             <details
               key={mod.num || mod.title}

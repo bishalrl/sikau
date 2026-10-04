@@ -64,7 +64,7 @@ export function TransformationSection({ title, description, stories = fallbackSt
   return (
     <section className="overflow-hidden bg-surface-container-low py-xl">
       <div className="site-container">
-        <div className="reveal active mb-xl text-center">
+        <div className="reveal mb-xl text-center">
           <h2 className="font-display-md text-display-md text-on-background">{title || "Transformation Stories"}</h2>
           <p className="mt-sm text-on-surface-variant">
             {description || "See the real-world impact of disciplined financial education."}
@@ -72,7 +72,7 @@ export function TransformationSection({ title, description, stories = fallbackSt
         </div>
         <div className="grid grid-cols-1 gap-xl md:grid-cols-2">
           {stories.map((story, index) => (
-            <article key={story.name} className={`reveal active group rounded-3xl bg-white p-lg shadow-lg ${index % 2 ? "delay-200" : "delay-100"}`}>
+            <article key={story.name} className={`reveal group rounded-3xl bg-white p-lg shadow-lg ${index % 2 ? "delay-200" : "delay-100"}`}>
               <div className="mb-lg flex items-center justify-between">
                 <div className="flex items-center gap-sm">
                   <div className="relative h-12 w-12 overflow-hidden rounded-full">

@@ -45,7 +45,7 @@ export function CourseOfferHighlights({
         <p className={`font-bold text-on-background ${compact ? "text-lg" : "text-2xl"}`}>
           {moneyLabel(priceNpr)}
         </p>
-        <Button size={compact ? "sm" : "md"} className="flex-1" href={href}>
+        <Button size={compact ? "sm" : "md"} className="flex-1" href={href} arrow>
           {cta}
         </Button>
       </div>

@@ -22,7 +22,7 @@ export function RoadmapSection({ title, description, steps: contentSteps }: Prop
   return (
     <section className="py-xl" id="goals">
       <div className="site-container">
-        <div className="reveal active mb-xl text-center">
+        <div className="reveal mb-xl text-center">
           <h2 className="font-display-md text-display-md text-on-background">{title || "Your Financial Freedom Roadmap"}</h2>
           <p className="mt-sm text-on-surface-variant">{description || "A 6-step journey to financial independence."}</p>
         </div>
@@ -30,7 +30,7 @@ export function RoadmapSection({ title, description, steps: contentSteps }: Prop
           <div className="absolute top-[88px] left-0 hidden h-1 w-full bg-outline-variant/30 lg:block" />
           <div className="relative grid grid-cols-1 gap-md md:grid-cols-3 lg:grid-cols-6">
             {row.map((step, i) => (
-              <div key={step.title} className={`reveal active group text-center ${delays[i]}`}>
+              <div key={step.title} className={`reveal group text-center ${delays[i]}`}>
                 <div
                   className={`relative z-10 mx-auto mb-md flex h-16 w-16 items-center justify-center rounded-full bg-white transition-transform group-hover:scale-110 ${
                     i === 0 ? "border-4 border-primary" : "border-4 border-outline"

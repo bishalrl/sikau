@@ -16,6 +16,8 @@ import { RoadmapSection } from "@/components/landing/RoadmapSection";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { HomepageReviewsSection } from "@/components/landing/HomepageReviewsSection";
 import { TrustMarquee } from "@/components/landing/TrustMarquee";
+import { MoneyJourney } from "@/components/motion/MoneyJourney";
+import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { parseCourseIncludes } from "@/lib/course-includes";
 import {
   getHomepagePromoCourse,
@@ -98,6 +100,7 @@ export default async function HomePage() {
 
   return (
     <div className="has-mobile-bottom-nav">
+      <ScrollProgress />
       <ScrollReveal />
       <LandingHeader />
       <main className="overflow-x-hidden">
@@ -135,6 +138,7 @@ export default async function HomePage() {
             timeline={raju?.items.map((item) => ({ title: item.data.title, description: item.data.description }))}
           />
         )}
+        <MoneyJourney />
         {masterclass?.enabled !== false && featuredCourse && (
           <MasterclassSection
             badge={masterclass?.data.badge}

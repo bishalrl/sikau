@@ -4,18 +4,42 @@ import { useEffect } from "react";
 
 export function ScrollReveal() {
   useEffect(() => {
-    const reveal = () => {
-      document.querySelectorAll(".reveal").forEach((element) => {
-        const top = element.getBoundingClientRect().top;
-        if (top < window.innerHeight - 150) {
-          element.classList.add("active");
+    const nodes = () => Array.from(document.querySelectorAll<HTMLElement>(".reveal:not(.active)"));
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.querySelectorAll(".reveal").forEach((element) => element.classList.add("active"));
+      return;
+    }
+
+    if (typeof IntersectionObserver === "undefined") {
+      nodes().forEach((element) => element.classList.add("active"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add("active");
+          observer.unobserve(entry.target);
         }
-      });
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.12 },
+    );
+
+    const observeAll = () => {
+      nodes().forEach((element) => observer.observe(element));
     };
 
-    reveal();
-    window.addEventListener("scroll", reveal);
-    return () => window.removeEventListener("scroll", reveal);
+    observeAll();
+
+    const mutation = new MutationObserver(observeAll);
+    mutation.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      mutation.disconnect();
+    };
   }, []);
 
   return null;

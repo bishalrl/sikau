@@ -84,12 +84,16 @@ export function LearnCourseGrid({ courses, categories, copy }: Props) {
         </div>
 
         <div className="mt-lg grid gap-md sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((course) => (
-            <Card key={course.id} hover className="overflow-hidden">
-              <Link href={`/learn/${course.slug}`} className="relative block h-44">
+          {filtered.map((course, index) => (
+            <Card
+              key={course.id}
+              hover
+              className={`reveal overflow-hidden ${["delay-100", "delay-200", "delay-250", "delay-300"][index % 4]}`}
+            >
+              <Link href={`/learn/${course.slug}`} className="media-zoom relative block h-44">
                 <Image src={course.image} alt={course.title} fill className="object-cover" />
                 {course.featured && (
-                  <Badge variant="gold" className="absolute left-3 top-3">
+                  <Badge variant="gold" className="absolute left-3 top-3 z-10">
                     Featured
                   </Badge>
                 )}
@@ -101,7 +105,7 @@ export function LearnCourseGrid({ courses, categories, copy }: Props) {
                   {course.paymentStatus === "APPROVED" && <Badge variant="gold">Enrolled</Badge>}
                   {course.paymentStatus === "PENDING" && <Badge>Payment pending</Badge>}
                 </div>
-                <h3 className="mt-sm font-label-md text-on-background">
+                <h3 className="mt-sm font-label-md text-on-background transition-colors">
                   <Link href={`/learn/${course.slug}`} className="hover:text-primary">
                     {course.title}
                   </Link>

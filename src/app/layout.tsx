@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { AmbientBackground } from "@/components/motion/AmbientBackground";
 import { getPublicCms } from "@/lib/cms/public";
 import "./globals.css";
 
@@ -52,8 +53,9 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="overflow-x-hidden bg-background font-body-md text-on-surface">
-        {children}
+      <body className="site-shell overflow-x-hidden font-body-md text-on-surface">
+        <AmbientBackground />
+        <div className="site-shell__content">{children}</div>
       </body>
     </html>
   );

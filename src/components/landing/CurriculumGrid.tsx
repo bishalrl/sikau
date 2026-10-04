@@ -26,7 +26,7 @@ export function CurriculumGrid({ title, description, modules: contentModules }: 
   return (
     <section className="bg-surface py-xl">
       <div className="site-container">
-        <div className="reveal active mb-xl text-center">
+        <div className="reveal mb-xl text-center">
           <h2 className="font-display-md text-display-md text-on-background">{title || "A Comprehensive Curriculum"}</h2>
           <p className="mx-auto mt-sm max-w-2xl text-on-surface-variant">
             {description ||
@@ -37,9 +37,9 @@ export function CurriculumGrid({ title, description, modules: contentModules }: 
           {cards.map((mod, i) => (
             <div
               key={mod.title}
-              className={`reveal active group rounded-2xl border border-outline-variant/30 bg-white p-md transition-all hover:border-primary/50 hover:shadow-xl ${delays[i % 5]}`}
+              className={`reveal premium-card group rounded-2xl border border-outline-variant/30 bg-white p-md ${delays[i % 5]}`}
             >
-              <div className="mb-md flex h-12 w-12 items-center justify-center rounded-xl bg-primary-container/10 text-primary transition-transform group-hover:scale-110">
+              <div className="mb-md flex h-12 w-12 items-center justify-center rounded-xl bg-primary-container/10 text-primary transition-transform duration-300 group-hover:scale-105">
                 <MaterialIcon name={mod.icon} />
               </div>
               <h3 className="font-headline-md mb-xs text-[18px]">{mod.title}</h3>

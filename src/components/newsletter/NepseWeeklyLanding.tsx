@@ -120,7 +120,6 @@ export default function NepseWeeklyLanding({
     <div className="nepse-landing nepse-weekly">
       {/* 1. Hero */}
       <section className="nepse-hero nepse-weekly__hero">
-        <div className="nepse-hero__glow" aria-hidden="true" />
         <div className="site-container nepse-hero__grid">
           <div className="nepse-hero__copy">
             <p className="nepse-weekly__brand">NEPSE WEEKLY</p>
@@ -166,8 +165,28 @@ export default function NepseWeeklyLanding({
                   className="nepse-hero__cover"
                 />
               ) : (
-                <div className="nepse-hero__cover flex items-center justify-center bg-primary/10 p-6 text-center text-sm text-on-surface-variant">
-                  Upload the report cover in Admin → Newsletter
+                <div className="nepse-weekly__cover-placeholder" aria-hidden="true">
+                  <span className="nepse-weekly__cover-orb nepse-weekly__cover-orb--a" />
+                  <span className="nepse-weekly__cover-orb nepse-weekly__cover-orb--b" />
+                  <span className="nepse-weekly__cover-orb nepse-weekly__cover-orb--c" />
+                  <svg
+                    className="nepse-weekly__cover-chart"
+                    viewBox="0 0 240 140"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      className="nepse-weekly__cover-chart-line"
+                      d="M12 108 C 40 100, 52 78, 78 82 S 118 110, 148 64 S 188 28, 228 36"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                    <circle className="nepse-weekly__cover-chart-dot" cx="228" cy="36" r="5" fill="currentColor" />
+                    <circle className="nepse-weekly__cover-float nepse-weekly__cover-float--1" cx="54" cy="48" r="3.5" />
+                    <circle className="nepse-weekly__cover-float nepse-weekly__cover-float--2" cx="118" cy="30" r="2.5" />
+                    <circle className="nepse-weekly__cover-float nepse-weekly__cover-float--3" cx="176" cy="72" r="3" />
+                  </svg>
                 </div>
               )}
               <p className="nepse-weekly__cover-caption">NEPSE WEEKLY · Research Report</p>

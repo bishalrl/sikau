@@ -1,6 +1,8 @@
 import { GuestBottomNav } from "@/components/layout/GuestBottomNav";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { getCurrentSession } from "@/lib/session";
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -8,6 +10,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="has-mobile-bottom-nav flex min-h-screen flex-col">
+      <ScrollProgress />
+      <ScrollReveal />
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <SiteFooter />

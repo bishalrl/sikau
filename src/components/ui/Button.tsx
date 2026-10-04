@@ -6,10 +6,10 @@ type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   primary:
-    "emerald-gradient text-white shadow-[0_4px_16px_rgba(16,185,129,0.25)] hover:-translate-y-0.5",
+    "btn-arrow emerald-gradient text-white shadow-[0_4px_16px_rgba(16,185,129,0.25)] hover:shadow-[0_8px_24px_rgba(16,185,129,0.35)]",
   secondary: "bg-secondary text-white hover:opacity-90",
   outline:
-    "border border-primary bg-transparent text-primary hover:bg-primary/5",
+    "border border-primary bg-transparent text-primary hover:bg-primary/5 transition-[background,border-color,color]",
   ghost: "bg-transparent text-on-surface-variant hover:bg-surface-container",
   gold: "bg-tertiary-container text-on-tertiary-container hover:opacity-90",
 };
@@ -25,6 +25,7 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: Size;
   href?: string;
   children: ReactNode;
+  arrow?: boolean;
 };
 
 export function Button({
@@ -33,21 +34,33 @@ export function Button({
   href,
   className = "",
   children,
+  arrow = false,
+  type = "button",
   ...props
 }: Props) {
-  const classes = `inline-flex items-center justify-center gap-2 font-medium transition-all ${variants[variant]} ${sizes[size]} ${className}`;
+  const classes = `inline-flex cursor-pointer items-center justify-center gap-2 font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:scale-[0.97] ${variants[variant]} ${sizes[size]} ${className}`;
+  const content = arrow ? (
+    <>
+      <span>{children}</span>
+      <span className="btn-arrow__icon" aria-hidden="true">
+        →
+      </span>
+    </>
+  ) : (
+    children
+  );
 
   if (href) {
     return (
       <Link href={href} className={classes}>
-        {children}
+        {content}
       </Link>
     );
   }
 
   return (
-    <button className={classes} {...props}>
-      {children}
+    <button type={type} className={classes} {...props}>
+      {content}
     </button>
   );
 }

@@ -44,7 +44,7 @@ export function MeetRajuSection({
     <section className="bg-surface-container-low py-xl" id="community">
       <div className="site-container">
         <div className="grid grid-cols-1 items-center gap-xl lg:grid-cols-2">
-          <div className="reveal active order-2 lg:order-1">
+          <div className="reveal order-2 lg:order-1">
             <div className="relative inline-block">
               <CmsImage
                 src={image || SITE_ASSETS.raju2}
@@ -59,7 +59,7 @@ export function MeetRajuSection({
               </div>
             </div>
           </div>
-          <div className="reveal active order-1 space-y-md lg:order-2">
+          <div className="reveal order-1 space-y-md lg:order-2">
             <h2 className="font-display-md text-display-md text-on-background">{title || "Meet Raju Khatiwada"}</h2>
             <p className="font-body-lg text-body-lg text-on-surface-variant">
               {description ||
