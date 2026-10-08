@@ -143,6 +143,8 @@ export async function upsertWebsiteContent(input: {
 }
 
 export async function getPublishedCourses(userId?: string) {
+  // Never fall back to hardcoded demo courses — that hides real admin courses
+  // when the DB is briefly unavailable or a query fails.
   return safeQuery(
     async () => {
       const records = await prisma.course.findMany({
@@ -206,7 +208,7 @@ export async function getPublishedCourses(userId?: string) {
         } satisfies CourseCard;
       });
     },
-    fallbackCourseCards(),
+    [] as CourseCard[],
   );
 }
 
@@ -531,7 +533,16 @@ export async function getPendingPayments() {
 }
 
 export async function getLearnCategories() {
-  return categories;
+  return safeQuery(async () => {
+    const records = await prisma.course.findMany({
+      where: { status: CourseStatus.PUBLISHED },
+      select: { category: true },
+      distinct: ["category"],
+      orderBy: { category: "asc" },
+    });
+    const fromDb = records.map((row) => row.category).filter(Boolean);
+    return ["All", ...(fromDb.length ? fromDb : categories.filter((item) => item !== "All"))];
+  }, ["All", ...categories.filter((item) => item !== "All")]);
 }
 
 export async function getMasterclassModules() {
